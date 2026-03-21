@@ -7,7 +7,7 @@ dev = []
 
 [project]
 name = "agentix-cli"
-version = "0.1.0"
+version = "0.1.1"
 description = "A CLI tool for [description TBD]"
 readme = "README.md"
 requires-python = ">=3.9"
@@ -35,3 +35,6 @@ agentix = "agentix.__main__:main"
 Homepage = "https://github.com/saggl/agentix"
 Repository = "https://github.com/saggl/agentix.git"
 Issues = "https://github.com/saggl/agentix/issues"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/agentix"]
