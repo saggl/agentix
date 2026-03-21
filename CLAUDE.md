@@ -59,6 +59,12 @@ This project uses **Trusted Publishing** (OIDC-based, no API tokens needed):
 - Write tests in `tests/` directory
 - Run tests with: `uv run pytest`
 - Aim for good coverage of CLI functionality
+- **CRITICAL**: When adding new commands or subcommands, you MUST create corresponding tests
+  - Test structure mirrors source: `src/agentix/foo/commands.py` → `tests/test_foo/test_commands.py`
+  - Use `CliRunner` from `click.testing` to invoke commands
+  - Test both success cases and error handling
+  - Verify JSON output format matches expectations
+  - Mock external API calls (Jira, Confluence, Jenkins clients)
 
 ## Common Tasks
 
