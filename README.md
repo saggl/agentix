@@ -18,8 +18,26 @@ pip install agentix-cli
 
 ## Usage
 
+### If installed from PyPI
+
 ```bash
 agentix
+```
+
+### If running from local development environment
+
+When developing locally, the `agentix` command needs to be run from within the virtual environment:
+
+```bash
+# Option 1: Use uv run (recommended)
+uv run agentix
+
+# Option 2: Activate the virtual environment first
+source .venv/bin/activate
+agentix
+
+# Option 3: Call the script directly
+.venv/bin/agentix
 ```
 
 ## Development
