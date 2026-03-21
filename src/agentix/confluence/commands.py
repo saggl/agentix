@@ -19,7 +19,7 @@ def _get_client(ctx: click.Context) -> ConfluenceClient:
         ctx.obj["config_manager"],
         profile_name=ctx.obj["profile"],
     )
-    return ConfluenceClient(auth.base_url, auth.user, auth.token)
+    return ConfluenceClient(auth.base_url, auth.user, auth.token, auth.auth_type)
 
 
 @click.group("confluence")

@@ -16,6 +16,7 @@ class ServiceAuth:
     base_url: str
     user: str
     token: str
+    auth_type: str = "basic"  # "basic" or "bearer"
 
 
 # Maps service name -> (env var prefix, user field name, config attribute names)
@@ -61,12 +62,16 @@ def resolve_auth(
         or os.environ.get(f"{env_prefix}_API_TOKEN")
         or getattr(service_config, token_attr, "")
     )
+    resolved_auth_type = (
+        os.environ.get(f"{env_prefix}_AUTH_TYPE")
+        or getattr(service_config, "auth_type", "basic")
+    )
 
     # Validate
     missing = []
     if not resolved_url:
         missing.append(f"base_url (set via --base-url, {env_prefix}_BASE_URL, or config)")
-    if not resolved_user:
+    if not resolved_user and resolved_auth_type == "basic":
         missing.append(
             f"{user_field} (set via --{user_field}, {env_prefix}_{user_field.upper()}, or config)"
         )
@@ -83,4 +88,5 @@ def resolve_auth(
         base_url=resolved_url,
         user=resolved_user,
         token=resolved_token,
+        auth_type=resolved_auth_type,
     )

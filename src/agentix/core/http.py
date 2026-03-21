@@ -27,6 +27,7 @@ class BaseHTTPClient:
         self,
         base_url: str,
         auth: Optional[Tuple[str, str]] = None,
+        auth_type: str = "basic",
         headers: Optional[Dict[str, str]] = None,
         timeout: float = 30.0,
     ):
@@ -35,7 +36,13 @@ class BaseHTTPClient:
         self.session = requests.Session()
 
         if auth:
-            self.session.auth = HTTPBasicAuth(auth[0], auth[1])
+            if auth_type == "bearer":
+                # For bearer auth, auth tuple is (unused, token)
+                # Set the Authorization header directly
+                self.session.headers["Authorization"] = f"Bearer {auth[1]}"
+            else:
+                # Default to Basic auth
+                self.session.auth = HTTPBasicAuth(auth[0], auth[1])
 
         self.session.headers.update(
             {
