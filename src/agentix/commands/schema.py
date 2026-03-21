@@ -2,6 +2,7 @@
 
 import click
 
+from agentix.core.exceptions import ValidationError
 from agentix.core.schema import find_command_by_path, get_command_schema, get_command_tree
 
 
@@ -37,11 +38,7 @@ def schema_command(ctx, command_path, full):
     target_command = find_command_by_path(root_cli, list(command_path))
 
     if target_command is None:
-        ctx.obj["formatter"].error(
-            click.ClickException(f"Command not found: {' '.join(command_path)}")
-        )
-        ctx.exit(1)
-        return
+        raise ValidationError(f"Command not found: {' '.join(command_path)}")
 
     # Generate schema for the target command
     path_str = f"agentix {' '.join(command_path)}"
