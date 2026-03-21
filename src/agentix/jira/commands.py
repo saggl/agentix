@@ -24,7 +24,7 @@ def _get_client(ctx: click.Context) -> JiraClient:
         ctx.obj["config_manager"],
         profile_name=ctx.obj["profile"],
     )
-    return JiraClient(auth.base_url, auth.user, auth.token)
+    return JiraClient(auth.base_url, auth.user, auth.token, auth.auth_type)
 
 
 @click.group("jira")

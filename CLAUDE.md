@@ -13,6 +13,7 @@ agentix is a Python CLI tool distributed via PyPI. This project uses modern Pyth
 - Add new dependencies: Add to `pyproject.toml` dependencies array, then `uv pip install -e .`
 - Build package: `uv build`
 - Run commands: `uv run <command>`
+- **Run the CLI**: Always use `uv run agentix` instead of just `agentix`
 
 ### Code Organization
 
@@ -61,7 +62,7 @@ This project uses **Trusted Publishing** (OIDC-based, no API tokens needed):
 ### Local development and testing
 ```bash
 uv pip install -e .
-agentix  # Test the CLI
+uv run agentix  # Test the CLI
 ```
 
 ### Building for distribution

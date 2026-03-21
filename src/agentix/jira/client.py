@@ -8,13 +8,15 @@ from agentix.core.http import BaseHTTPClient
 class JiraClient:
     """Jira REST API v3 (Cloud) / v2 (Server) client."""
 
-    def __init__(self, base_url: str, email: str, api_token: str):
+    def __init__(self, base_url: str, email: str, api_token: str, auth_type: str = "basic"):
         self.http = BaseHTTPClient(
             base_url=base_url,
             auth=(email, api_token),
+            auth_type=auth_type,
             headers={"Content-Type": "application/json"},
         )
-        self._api = "/rest/api/3"
+        # Use API v2 for bearer auth (Jira Server/Data Center), v3 for basic (Jira Cloud)
+        self._api = "/rest/api/2" if auth_type == "bearer" else "/rest/api/3"
         self._agile = "/rest/agile/1.0"
 
     # -- Issues --

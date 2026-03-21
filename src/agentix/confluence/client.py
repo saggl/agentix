@@ -8,12 +8,15 @@ from agentix.core.http import BaseHTTPClient
 class ConfluenceClient:
     """Confluence REST API client (Cloud v2 + legacy v1)."""
 
-    def __init__(self, base_url: str, email: str, api_token: str):
+    def __init__(self, base_url: str, email: str, api_token: str, auth_type: str = "basic"):
         self.http = BaseHTTPClient(
             base_url=base_url,
             auth=(email, api_token),
+            auth_type=auth_type,
             headers={"Content-Type": "application/json"},
         )
+        self.auth_type = auth_type
+        # Bearer auth (Server/Data Center) needs v1, Basic auth (Cloud) can use v2
         self._v2 = "/api/v2"
         self._v1 = "/rest/api"
 
@@ -192,9 +195,11 @@ class ConfluenceClient:
     # -- Spaces --
 
     def get_spaces(self, max_results: Optional[int] = None) -> List[Dict[str, Any]]:
+        # Bearer auth requires v1 API endpoint (singular "space")
+        endpoint = f"{self._v1}/space" if self.auth_type == "bearer" else f"{self._v2}/spaces"
         return list(
             self.http.paginate_cursor(
-                f"{self._v2}/spaces", max_results=max_results
+                endpoint, max_results=max_results
             )
         )
 

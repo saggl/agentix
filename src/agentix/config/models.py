@@ -12,6 +12,7 @@ class JiraConfig:
     base_url: str = ""
     email: str = ""
     api_token: str = ""
+    auth_type: str = "basic"  # "basic" or "bearer"
 
 
 @dataclass
@@ -19,6 +20,7 @@ class ConfluenceConfig:
     base_url: str = ""
     email: str = ""
     api_token: str = ""
+    auth_type: str = "basic"  # "basic" or "bearer"
 
 
 @dataclass
