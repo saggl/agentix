@@ -10,10 +10,11 @@ from agentix.core.http import BaseHTTPClient
 class JenkinsClient:
     """Jenkins REST API client."""
 
-    def __init__(self, base_url: str, username: str, api_token: str):
+    def __init__(self, base_url: str, username: str, api_token: str, auth_type: str = "basic"):
         self.http = BaseHTTPClient(
             base_url=base_url,
             auth=(username, api_token),
+            auth_type=auth_type,
         )
         self._crumb: Optional[Dict[str, str]] = None
 

@@ -28,6 +28,7 @@ class JenkinsConfig:
     base_url: str = ""
     username: str = ""
     api_token: str = ""
+    auth_type: str = "basic"  # "basic" or "bearer"
 
 
 @dataclass
