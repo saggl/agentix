@@ -1,0 +1,109 @@
+# agentix - Claude Code Instructions
+
+## Project Overview
+
+agentix is a Python CLI tool distributed via PyPI. This project uses modern Python packaging practices with `uv` for package management.
+
+## Development Workflow
+
+### Package Management
+
+- **Always use `uv`** for package management operations
+- Install dependencies: `uv pip install -e .`
+- Add new dependencies: Add to `pyproject.toml` dependencies array, then `uv pip install -e .`
+- Build package: `uv build`
+- Run commands: `uv run <command>`
+
+### Code Organization
+
+- Source code lives in `src/agentix/`
+- Tests live in `tests/`
+- Use the `src/` layout (prevents accidental imports from repo root)
+
+### Version Management
+
+- Version is defined in TWO places: `src/agentix/__init__.py` and `pyproject.toml`
+- When bumping version, update BOTH files to keep them in sync
+- Follow semantic versioning (MAJOR.MINOR.PATCH)
+
+### Publishing to PyPI
+
+This project uses **Trusted Publishing** (OIDC-based, no API tokens needed):
+
+1. Ensure version is bumped in both files
+2. Commit all changes
+3. Create and push a git tag: `git tag vX.Y.Z && git push origin vX.Y.Z`
+4. Create a GitHub release from the tag (via web UI or `gh release create`)
+5. GitHub Actions will automatically build and publish to PyPI
+
+**Never manually publish to PyPI** - always use the GitHub Actions workflow.
+
+### Python Version
+
+- Minimum supported: Python 3.9
+- `.python-version` file specifies the version `uv` should use
+- CI/CD uses `uv python install` to install the correct version
+
+## Code Style
+
+- Follow PEP 8
+- Use type hints where appropriate
+- Keep CLI code modular and testable
+
+## Testing
+
+- Write tests in `tests/` directory
+- Run tests with: `uv run pytest`
+- Aim for good coverage of CLI functionality
+
+## Common Tasks
+
+### Local development and testing
+```bash
+uv pip install -e .
+agentix  # Test the CLI
+```
+
+### Building for distribution
+```bash
+uv build
+ls -la dist/  # Check outputs
+```
+
+### Adding a new dependency
+1. Add to `dependencies` array in `pyproject.toml`
+2. Run `uv pip install -e .`
+3. Test that it works
+
+### Version bump and release
+```bash
+# 1. Update version in __init__.py and pyproject.toml
+# 2. Commit changes
+git add .
+git commit -m "Bump version to X.Y.Z"
+git push
+
+# 3. Create and push tag
+git tag vX.Y.Z
+git push origin vX.Y.Z
+
+# 4. Create GitHub release
+gh release create vX.Y.Z --title "vX.Y.Z" --notes "Release notes here"
+
+# GitHub Actions will handle the rest
+```
+
+## Project Structure
+
+```
+agentix/
+├── src/agentix/          # Main package code
+│   ├── __init__.py       # Version and package init
+│   ├── __main__.py       # Entry point
+│   └── cli.py            # CLI implementation
+├── tests/                # Test files
+├── .github/workflows/    # CI/CD workflows
+├── pyproject.toml        # Package configuration
+├── .python-version       # Python version for uv
+└── CLAUDE.md            # This file
+```
