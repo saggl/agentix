@@ -6,6 +6,7 @@ import sys
 import click
 
 from agentix import __version__
+from agentix.commands.schema import schema_command
 from agentix.config.commands import config_group
 from agentix.config.manager import ConfigManager
 from agentix.core.exceptions import AgentixError
@@ -56,6 +57,7 @@ cli.add_command(config_group)
 cli.add_command(jira_group)
 cli.add_command(confluence_group)
 cli.add_command(jenkins_group)
+cli.add_command(schema_command)
 
 
 def main():
