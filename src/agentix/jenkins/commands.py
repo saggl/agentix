@@ -23,7 +23,7 @@ def _get_client(ctx: click.Context) -> JenkinsClient:
         ctx.obj["config_manager"],
         profile_name=ctx.obj["profile"],
     )
-    return JenkinsClient(auth.base_url, auth.user, auth.token)
+    return JenkinsClient(auth.base_url, auth.user, auth.token, auth.auth_type)
 
 
 @click.group("jenkins")
