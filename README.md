@@ -7,13 +7,13 @@
 ### Using uv (recommended)
 
 ```bash
-uv pip install agentix
+uv pip install agentix-cli
 ```
 
 ### Using pip
 
 ```bash
-pip install agentix
+pip install agentix-cli
 ```
 
 ## Usage

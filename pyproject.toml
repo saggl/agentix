@@ -6,7 +6,7 @@ build-backend = "hatchling.build"
 dev = []
 
 [project]
-name = "agentix"
+name = "agentix-cli"
 version = "0.1.0"
 description = "A CLI tool for [description TBD]"
 readme = "README.md"
