@@ -27,8 +27,13 @@ class ConfluenceClient:
         page_id: str,
         body_format: str = "storage",
     ) -> Dict[str, Any]:
-        params = {"body-format": body_format}
-        return self.http.get(f"{self._v2}/pages/{page_id}", params=params)
+        # Bearer auth requires v1 API endpoint
+        if self.auth_type == "bearer":
+            params = {"expand": "body.storage,version"}
+            return self.http.get(f"{self._v1}/content/{page_id}", params=params)
+        else:
+            params = {"body-format": body_format}
+            return self.http.get(f"{self._v2}/pages/{page_id}", params=params)
 
     def get_page_by_title(
         self,
@@ -204,7 +209,14 @@ class ConfluenceClient:
         )
 
     def get_space(self, space_id: str) -> Dict[str, Any]:
-        return self.http.get(f"{self._v2}/spaces/{space_id}")
+        # Bearer auth requires v1 API endpoint and uses space KEY
+        # v2 API uses numeric space ID
+        if self.auth_type == "bearer":
+            # v1 API: /rest/api/space/{spaceKey}
+            return self.http.get(f"{self._v1}/space/{space_id}")
+        else:
+            # v2 API: /api/v2/spaces/{spaceId}
+            return self.http.get(f"{self._v2}/spaces/{space_id}")
 
     def get_space_by_key(self, space_key: str) -> Optional[Dict[str, Any]]:
         """Find space by its key."""

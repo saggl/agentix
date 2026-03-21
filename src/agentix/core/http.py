@@ -112,10 +112,18 @@ class BaseHTTPClient:
         if not response.content:
             return None
 
+        # Try to parse as JSON first (regardless of Content-Type header)
+        # This handles cases where APIs return JSON without proper headers
         content_type = response.headers.get("Content-Type", "")
         if "application/json" in content_type:
             return response.json()
-        return response.text
+
+        # If Content-Type isn't set, try parsing as JSON anyway
+        try:
+            return response.json()
+        except ValueError:
+            # If JSON parsing fails, return as text
+            return response.text
 
     def _request(self, method: str, path: str, **kwargs: Any) -> Any:
         kwargs.setdefault("timeout", self.timeout)

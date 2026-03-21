@@ -12,19 +12,27 @@ def _strip_html(html: str) -> str:
 
 
 def normalize_page(page: Dict[str, Any]) -> Dict[str, Any]:
-    """Normalize a Confluence page (v2 API)."""
+    """Normalize a Confluence page (v1 or v2 API)."""
     body_val = ""
     body = page.get("body", {})
     if isinstance(body, dict):
+        # v2 API: body.storage or body.view
         storage = body.get("storage", body.get("view", {}))
         if isinstance(storage, dict):
             body_val = storage.get("value", "")
+
+    # v1 API uses space.key instead of spaceId
+    space_id = page.get("spaceId", "")
+    if not space_id:
+        space_info = page.get("space", {})
+        if isinstance(space_info, dict):
+            space_id = space_info.get("key", "")
 
     return {
         "id": page.get("id", ""),
         "title": page.get("title", ""),
         "status": page.get("status", ""),
-        "spaceId": page.get("spaceId", ""),
+        "spaceId": space_id,
         "version": page.get("version", {}).get("number", ""),
         "body": body_val,
     }
