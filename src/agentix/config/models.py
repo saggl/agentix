@@ -32,10 +32,19 @@ class JenkinsConfig:
 
 
 @dataclass
+class BitbucketConfig:
+    base_url: str = ""
+    username: str = ""
+    api_token: str = ""
+    auth_type: str = "bearer"  # "basic" or "bearer"
+
+
+@dataclass
 class Profile:
     jira: JiraConfig = field(default_factory=JiraConfig)
     confluence: ConfluenceConfig = field(default_factory=ConfluenceConfig)
     jenkins: JenkinsConfig = field(default_factory=JenkinsConfig)
+    bitbucket: BitbucketConfig = field(default_factory=BitbucketConfig)
 
     @classmethod
     def from_dict(cls, data: Dict[str, Any]) -> "Profile":
@@ -43,11 +52,12 @@ class Profile:
             jira=JiraConfig(**data.get("jira", {})),
             confluence=ConfluenceConfig(**data.get("confluence", {})),
             jenkins=JenkinsConfig(**data.get("jenkins", {})),
+            bitbucket=BitbucketConfig(**data.get("bitbucket", {})),
         )
 
     def to_dict(self) -> Dict[str, Any]:
         result = {}
-        for service_name in ("jira", "confluence", "jenkins"):
+        for service_name in ("jira", "confluence", "jenkins", "bitbucket"):
             cfg = getattr(self, service_name)
             d = {k: v for k, v in cfg.__dict__.items() if v}
             if d:

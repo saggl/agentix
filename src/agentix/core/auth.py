@@ -24,6 +24,7 @@ _SERVICE_ENV = {
     "jira": ("AGENTIX_JIRA", "email", ("base_url", "email", "api_token")),
     "confluence": ("AGENTIX_CONFLUENCE", "email", ("base_url", "email", "api_token")),
     "jenkins": ("AGENTIX_JENKINS", "username", ("base_url", "username", "api_token")),
+    "bitbucket": ("AGENTIX_BITBUCKET", "username", ("base_url", "username", "api_token")),
 }
 
 
