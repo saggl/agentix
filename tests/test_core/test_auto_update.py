@@ -5,16 +5,14 @@ import os
 import subprocess
 import sys
 from datetime import datetime, timedelta, timezone
-from pathlib import Path
-from unittest.mock import MagicMock, Mock, patch
+from unittest.mock import Mock, patch
 
 import pytest
 import requests
 
 from agentix import __version__
-from agentix.config.models import AgentixConfig, Defaults
+from agentix.config.models import AgentixConfig
 from agentix.core.auto_update import (
-    _get_cache_path,
     _read_cache,
     _write_cache,
     auto_update_if_needed,
