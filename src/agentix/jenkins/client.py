@@ -177,6 +177,60 @@ class JenkinsClient:
 
         return self.get_build(job_name, build_number)
 
+    def get_build_artifacts(
+        self, job_name: str, build_number: Optional[int] = None
+    ) -> List[Dict[str, Any]]:
+        """Get list of artifacts for a build."""
+        if build_number:
+            path = f"{self._job_path(job_name)}/{build_number}/api/json"
+        else:
+            path = f"{self._job_path(job_name)}/lastBuild/api/json"
+        data = self.http.get(path, params={"tree": "artifacts[*]"})
+        return data.get("artifacts", [])
+
+    def download_artifact(
+        self, job_name: str, artifact_path: str, build_number: Optional[int] = None
+    ) -> bytes:
+        """Download a build artifact into memory.
+
+        For large artifacts, consider using download_artifact_to_file() instead.
+        """
+        if build_number:
+            url = f"{self._job_path(job_name)}/{build_number}/artifact/{artifact_path}"
+        else:
+            url = f"{self._job_path(job_name)}/lastBuild/artifact/{artifact_path}"
+
+        # Use raw HTTP get to retrieve binary content
+        resp = self.http.get_raw(self.http._url(url))
+        resp.raise_for_status()
+        return resp.content
+
+    def download_artifact_to_file(
+        self,
+        job_name: str,
+        artifact_path: str,
+        output_path: str,
+        build_number: Optional[int] = None,
+        chunk_size: int = 8192,
+    ) -> None:
+        """Download a build artifact directly to file using streaming.
+
+        More memory-efficient for large artifacts than download_artifact().
+        """
+        if build_number:
+            url = f"{self._job_path(job_name)}/{build_number}/artifact/{artifact_path}"
+        else:
+            url = f"{self._job_path(job_name)}/lastBuild/artifact/{artifact_path}"
+
+        # Stream download to avoid loading entire file into memory
+        resp = self.http.get_raw(self.http._url(url), stream=True)
+        resp.raise_for_status()
+
+        with open(output_path, 'wb') as f:
+            for chunk in resp.iter_content(chunk_size=chunk_size):
+                if chunk:  # Filter out keep-alive chunks
+                    f.write(chunk)
+
     # -- Test Results --
 
     def get_test_results(

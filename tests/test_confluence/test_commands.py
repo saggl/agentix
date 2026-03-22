@@ -255,6 +255,94 @@ def test_confluence_search_cql(runner, mock_confluence_client):
     assert len(data) == 2
 
 
+def test_confluence_page_children(runner, mock_confluence_client):
+    mock_confluence_client.get_page_children.return_value = [
+        {"id": "child1", "title": "Child Page 1", "type": "page", "_links": {"webui": "/pages/child1"}},
+        {"id": "child2", "title": "Child Page 2", "type": "page", "_links": {"webui": "/pages/child2"}},
+    ]
+
+    result = runner.invoke(cli, ["confluence", "page", "children", "123"])
+    assert result.exit_code == 0
+    data = json.loads(result.output)
+    assert len(data) == 2
+    assert data[0]["id"] == "child1"
+    mock_confluence_client.get_page_children.assert_called_once_with("123", max_results=None)
+
+
+def test_confluence_page_children_with_max_results(runner, mock_confluence_client):
+    mock_confluence_client.get_page_children.return_value = [
+        {"id": "child1", "title": "Child Page 1", "type": "page", "_links": {"webui": "/pages/child1"}},
+    ]
+
+    result = runner.invoke(cli, ["confluence", "page", "children", "123", "--max-results", "10"])
+    assert result.exit_code == 0
+    mock_confluence_client.get_page_children.assert_called_once_with("123", max_results=10)
+
+
+def test_confluence_page_find_success(runner, mock_confluence_client):
+    mock_confluence_client.get_page_by_title.return_value = {
+        "id": "456",
+        "title": "Test Page",
+        "body": {"storage": {"value": "<p>Content</p>"}},
+        "version": {"number": 1},
+        "_links": {"webui": "/pages/456"},
+    }
+
+    result = runner.invoke(
+        cli,
+        ["confluence", "page", "find", "--space", "TEST", "--title", "Test Page"],
+    )
+    assert result.exit_code == 0
+    data = json.loads(result.output)
+    assert data["id"] == "456"
+    assert data["title"] == "Test Page"
+    mock_confluence_client.get_page_by_title.assert_called_once_with("TEST", "Test Page")
+
+
+def test_confluence_page_find_not_found(runner, mock_confluence_client):
+    mock_confluence_client.get_page_by_title.return_value = None
+
+    result = runner.invoke(
+        cli,
+        ["confluence", "page", "find", "--space", "TEST", "--title", "Missing"],
+    )
+    assert result.exit_code == 1
+    data = json.loads(result.output)
+    assert data["error"] is True
+    assert "not found" in data["message"].lower()
+
+
+def test_confluence_space_find_success(runner, mock_confluence_client):
+    mock_confluence_client.get_space_by_key.return_value = {
+        "id": "789",
+        "name": "Test Space",
+        "key": "TEST",
+    }
+
+    result = runner.invoke(
+        cli,
+        ["confluence", "space", "find", "--key", "TEST"],
+    )
+    assert result.exit_code == 0
+    data = json.loads(result.output)
+    assert data["id"] == "789"
+    assert data["key"] == "TEST"
+    mock_confluence_client.get_space_by_key.assert_called_once_with("TEST")
+
+
+def test_confluence_space_find_not_found(runner, mock_confluence_client):
+    mock_confluence_client.get_space_by_key.return_value = None
+
+    result = runner.invoke(
+        cli,
+        ["confluence", "space", "find", "--key", "MISSING"],
+    )
+    assert result.exit_code == 1
+    data = json.loads(result.output)
+    assert data["error"] is True
+    assert "not found" in data["message"].lower()
+
+
 def test_confluence_table_format(runner, mock_confluence_client):
     mock_confluence_client.get_spaces.return_value = [
         {"id": "s1", "name": "Engineering", "key": "ENG"},

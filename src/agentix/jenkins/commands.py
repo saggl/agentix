@@ -5,6 +5,7 @@ import click
 from agentix.core.auth import resolve_auth
 from agentix.jenkins.client import JenkinsClient
 from agentix.jenkins.models import (
+    normalize_artifact,
     normalize_build,
     normalize_build_brief,
     normalize_job,
@@ -173,6 +174,40 @@ def build_abort(ctx, job_name, build_number):
     client = _get_client(ctx)
     client.abort_build(job_name, build_number)
     ctx.obj["formatter"].success(f"Aborted build #{build_number} of {job_name}")
+
+
+@build_group.command("artifacts")
+@click.argument("job_name")
+@click.option("--build-number", "-n", type=int, help="Build number (default: latest).")
+@click.pass_context
+def build_artifacts(ctx, job_name, build_number):
+    """List build artifacts."""
+    client = _get_client(ctx)
+    artifacts = client.get_build_artifacts(job_name, build_number=build_number)
+    ctx.obj["formatter"].output([normalize_artifact(a) for a in artifacts])
+
+
+@build_group.command("download")
+@click.argument("job_name")
+@click.option("--artifact", "-a", "artifact_path", required=True, help="Artifact relative path.")
+@click.option("--build-number", "-n", type=int, help="Build number (default: latest).")
+@click.option("--output", "-o", help="Output file path (default: stdout).")
+@click.pass_context
+def build_download(ctx, job_name, artifact_path, build_number, output):
+    """Download a build artifact."""
+    client = _get_client(ctx)
+
+    if output:
+        # Use streaming download for files to avoid loading into memory
+        client.download_artifact_to_file(
+            job_name, artifact_path, output, build_number=build_number
+        )
+        ctx.obj["formatter"].success(f"Downloaded to {output}")
+    else:
+        # For stdout, load into memory (typically for small files piped to other commands)
+        content = client.download_artifact(job_name, artifact_path, build_number=build_number)
+        import sys
+        sys.stdout.buffer.write(content)
 
 
 # -- Test commands --

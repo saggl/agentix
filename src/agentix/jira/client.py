@@ -202,6 +202,23 @@ class JiraClient:
         resp.raise_for_status()
         return resp.content
 
+    def get_issue_edit_metadata(self, issue_key: str) -> Dict[str, Any]:
+        """Get metadata for editing an issue (available fields and their allowed values)."""
+        return self.http.get(f"{self._api}/issue/{issue_key}/editmeta")
+
+    def get_create_metadata(
+        self,
+        project_keys: Optional[List[str]] = None,
+        issue_type_names: Optional[List[str]] = None,
+    ) -> Dict[str, Any]:
+        """Get metadata for creating issues (available fields and their allowed values)."""
+        params = {}
+        if project_keys:
+            params["projectKeys"] = ",".join(project_keys)
+        if issue_type_names:
+            params["issuetypeNames"] = ",".join(issue_type_names)
+        return self.http.get(f"{self._api}/issue/createmeta", params=params)
+
     # -- Sprints (Agile API) --
 
     def get_boards(
@@ -269,3 +286,110 @@ class JiraClient:
 
     def get_project(self, project_key: str) -> Dict[str, Any]:
         return self.http.get(f"{self._api}/project/{project_key}")
+
+    # -- Components --
+
+    def get_project_components(self, project_key: str) -> List[Dict[str, Any]]:
+        """Get all components in a project."""
+        return self.http.get(f"{self._api}/project/{project_key}/components")
+
+    def create_component(
+        self,
+        project_key: str,
+        name: str,
+        description: Optional[str] = None,
+        lead_account_id: Optional[str] = None,
+    ) -> Dict[str, Any]:
+        """Create a component in a project."""
+        body: Dict[str, Any] = {
+            "name": name,
+            "project": project_key,
+        }
+        if description:
+            body["description"] = description
+        if lead_account_id:
+            body["leadAccountId"] = lead_account_id
+        return self.http.post(f"{self._api}/component", json=body)
+
+    def update_component(
+        self,
+        component_id: str,
+        name: Optional[str] = None,
+        description: Optional[str] = None,
+        lead_account_id: Optional[str] = None,
+    ) -> Dict[str, Any]:
+        """Update a component."""
+        body: Dict[str, Any] = {}
+        if name:
+            body["name"] = name
+        if description is not None:
+            body["description"] = description
+        if lead_account_id:
+            body["leadAccountId"] = lead_account_id
+        return self.http.put(f"{self._api}/component/{component_id}", json=body)
+
+    def delete_component(self, component_id: str) -> None:
+        """Delete a component."""
+        self.http.delete(f"{self._api}/component/{component_id}")
+
+    # -- Versions --
+
+    def get_project_versions(self, project_key: str) -> List[Dict[str, Any]]:
+        """Get all versions in a project."""
+        return self.http.get(f"{self._api}/project/{project_key}/versions")
+
+    def create_version(
+        self,
+        project_key: str,
+        name: str,
+        description: Optional[str] = None,
+        start_date: Optional[str] = None,
+        release_date: Optional[str] = None,
+        released: bool = False,
+        archived: bool = False,
+    ) -> Dict[str, Any]:
+        """Create a version in a project."""
+        body: Dict[str, Any] = {
+            "name": name,
+            "project": project_key,
+            "released": released,
+            "archived": archived,
+        }
+        if description:
+            body["description"] = description
+        if start_date:
+            body["startDate"] = start_date
+        if release_date:
+            body["releaseDate"] = release_date
+        return self.http.post(f"{self._api}/version", json=body)
+
+    def update_version(
+        self,
+        version_id: str,
+        name: Optional[str] = None,
+        description: Optional[str] = None,
+        released: Optional[bool] = None,
+        archived: Optional[bool] = None,
+        release_date: Optional[str] = None,
+    ) -> Dict[str, Any]:
+        """Update a version."""
+        body: Dict[str, Any] = {}
+        if name:
+            body["name"] = name
+        if description is not None:
+            body["description"] = description
+        if released is not None:
+            body["released"] = released
+        if archived is not None:
+            body["archived"] = archived
+        if release_date:
+            body["releaseDate"] = release_date
+        return self.http.put(f"{self._api}/version/{version_id}", json=body)
+
+    def delete_version(self, version_id: str) -> None:
+        """Delete a version."""
+        self.http.delete(f"{self._api}/version/{version_id}")
+
+    def archive_version(self, version_id: str) -> Dict[str, Any]:
+        """Archive a version (convenience method)."""
+        return self.update_version(version_id, archived=True)

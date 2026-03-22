@@ -98,3 +98,12 @@ def normalize_node(node: Dict[str, Any]) -> Dict[str, Any]:
         "idle": node.get("idle", True),
         "numExecutors": node.get("numExecutors", 0),
     }
+
+
+def normalize_artifact(artifact: Dict[str, Any]) -> Dict[str, Any]:
+    """Normalize a Jenkins build artifact."""
+    return {
+        "fileName": artifact.get("fileName", ""),
+        "displayPath": artifact.get("displayPath", ""),
+        "relativePath": artifact.get("relativePath", ""),
+    }
