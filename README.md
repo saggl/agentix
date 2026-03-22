@@ -1,18 +1,18 @@
 # agentix
 
-**Unified CLI for Jira, Confluence, and Jenkins** — designed for both humans and AI agents.
+**Unified CLI for Jira, Confluence, Jenkins, and Bitbucket** — designed for both humans and AI agents.
 
 agentix provides a consistent, JSON-first interface to Atlassian and Jenkins APIs, making it ideal for automation, scripting, and agentic workflows.
 
 ## Features
 
-- 🔄 **Unified Interface**: Single CLI for Jira, Confluence, and Jenkins
+- 🔄 **Unified Interface**: Single CLI for Jira, Confluence, Jenkins, and Bitbucket
 - 📊 **JSON-First Output**: Default JSON format for easy parsing by agents and scripts
 - 🔍 **Schema Introspection**: Machine-readable command metadata via `agentix schema`
 - 🔐 **Modern Authentication**: Bearer token and API token support
 - 📋 **Human-Friendly**: Optional table output format for terminal use
 - ⚙️ **Multi-Profile**: Manage multiple environments (dev, staging, prod)
-- 🧪 **Well-Tested**: Comprehensive test suite with 67+ tests
+- 🧪 **Well-Tested**: Comprehensive test suite with 130+ tests
 
 ## Installation
 
@@ -42,6 +42,7 @@ This will prompt you to configure:
 - **Jira**: Base URL, email, API token
 - **Confluence**: Base URL, email, API token (can reuse Jira credentials for Atlassian Cloud)
 - **Jenkins**: Base URL, username, API token
+- **Bitbucket**: Base URL, username, Personal Access Token (PAT)
 
 Configuration is saved to `~/.config/agentix/config.toml`
 
@@ -51,6 +52,7 @@ Configuration is saved to `~/.config/agentix/config.toml`
 agentix jira project list
 agentix confluence space list
 agentix jenkins job list
+agentix bitbucket project list
 ```
 
 ## Usage
@@ -127,6 +129,60 @@ agentix jenkins build status my-pipeline
 
 # Get build logs
 agentix jenkins build logs my-pipeline --tail 50
+```
+
+### Bitbucket
+
+```bash
+# List projects
+agentix bitbucket project list
+
+# List repositories
+agentix bitbucket repo list --project PROJ
+
+# Get repository details
+agentix bitbucket repo get PROJ my-repo
+
+# Create a repository
+agentix bitbucket repo create --project PROJ --name "New Repo"
+
+# List branches
+agentix bitbucket branch list PROJ my-repo
+
+# Create a branch
+agentix bitbucket branch create PROJ my-repo --name feature-branch --from main
+
+# List pull requests
+agentix bitbucket pr list PROJ my-repo --state OPEN
+
+# Create a pull request
+agentix bitbucket pr create PROJ my-repo \
+  --title "Add new feature" \
+  --from feature-branch \
+  --to main \
+  --reviewers "user1,user2"
+
+# Approve a pull request
+agentix bitbucket pr approve PROJ my-repo 1
+
+# Merge a pull request
+agentix bitbucket pr merge PROJ my-repo 1 --yes
+
+# Add comment to PR
+agentix bitbucket pr comment PROJ my-repo 1 --text "Looks good!"
+
+# List commits
+agentix bitbucket commit list PROJ my-repo --until main
+
+# Get commit details
+agentix bitbucket commit get PROJ my-repo abc123
+
+# Set build status
+agentix bitbucket build set abc123 \
+  --state SUCCESSFUL \
+  --key ci-build \
+  --name "CI Pipeline" \
+  --url "https://ci.example.com/build/123"
 ```
 
 ### Output Formats
