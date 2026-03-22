@@ -16,17 +16,11 @@ agentix provides a consistent, JSON-first interface to Atlassian and Jenkins API
 
 ## Installation
 
-### Using uv (recommended)
-
 ```bash
-uv pip install agentix-cli
+uv tool install agentix-cli
 ```
 
-### Using pip
-
-```bash
-pip install agentix-cli
-```
+This installs agentix in an isolated environment and adds it to your PATH.
 
 ## Quick Start
 

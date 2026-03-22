@@ -5,6 +5,13 @@ import sys
 
 import click
 
+# Handle different Click versions - NoArgsIsHelpError was added in Click 8.2.0
+try:
+    from click.exceptions import NoArgsIsHelpError
+except ImportError:
+    # Older versions of Click don't have this exception
+    NoArgsIsHelpError = None  # type: ignore
+
 from agentix import __version__
 from agentix.commands.schema import schema_command
 from agentix.config.commands import config_group
@@ -64,16 +71,34 @@ cli.add_command(schema_command)
 
 def main():
     """Entry point for the agentix CLI."""
+    # Check and perform auto-update if needed (non-blocking)
+    try:
+        config_manager = ConfigManager()
+        from agentix.core.auto_update import auto_update_if_needed
+
+        auto_update_if_needed(config_manager.config)
+    except Exception:
+        # Silently ignore auto-update failures to avoid breaking the CLI
+        pass
+
     try:
         cli(standalone_mode=False)
-    except AgentixError as e:
-        formatter = OutputFormatter("json")
-        formatter.error(e)
-        sys.exit(e.exit_code)
-    except click.exceptions.Abort:
-        sys.exit(130)
-    except click.exceptions.Exit as e:
-        sys.exit(e.exit_code)
+    except Exception as e:
+        # Handle NoArgsIsHelpError if available (Click >= 8.2.0)
+        if NoArgsIsHelpError is not None and isinstance(e, NoArgsIsHelpError):
+            # When invoked without arguments, show help gracefully
+            cli(["--help"])
+        elif isinstance(e, AgentixError):
+            formatter = OutputFormatter("json")
+            formatter.error(e)
+            sys.exit(e.exit_code)
+        elif isinstance(e, click.exceptions.Abort):
+            sys.exit(130)
+        elif isinstance(e, click.exceptions.Exit):
+            sys.exit(e.exit_code)
+        else:
+            # Re-raise unexpected exceptions
+            raise
 
 
 if __name__ == "__main__":

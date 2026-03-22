@@ -68,6 +68,7 @@ class Profile:
 @dataclass
 class Defaults:
     format: str = "json"
+    auto_update: bool = True
 
 
 @dataclass
