@@ -461,3 +461,106 @@ def test_user_me(runner, mock_bitbucket_client):
     assert result.exit_code == 0
     data = json.loads(result.output)
     assert data["name"] == "jdoe"
+
+
+# -- Tag tests --
+
+
+def test_tag_list(runner, mock_bitbucket_client):
+    mock_bitbucket_client.get_tags.return_value = [
+        {
+            "id": "refs/tags/v1.0",
+            "displayId": "v1.0",
+            "type": "TAG",
+            "latestCommit": "abc123",
+            "hash": "abc123",
+        },
+        {
+            "id": "refs/tags/v2.0",
+            "displayId": "v2.0",
+            "type": "TAG",
+            "latestCommit": "def456",
+            "hash": "def456",
+        },
+    ]
+
+    result = runner.invoke(cli, ["bitbucket", "tag", "list", "PROJ", "my-repo"])
+    assert result.exit_code == 0
+    data = json.loads(result.output)
+    assert len(data) == 2
+    assert data[0]["displayId"] == "v1.0"
+    mock_bitbucket_client.get_tags.assert_called_once_with("PROJ", "my-repo", filter_text=None)
+
+
+def test_tag_list_with_filter(runner, mock_bitbucket_client):
+    mock_bitbucket_client.get_tags.return_value = [
+        {"id": "refs/tags/v1.0", "displayId": "v1.0", "type": "TAG"},
+    ]
+
+    result = runner.invoke(
+        cli, ["bitbucket", "tag", "list", "PROJ", "my-repo", "--filter", "v1.*"]
+    )
+    assert result.exit_code == 0
+    mock_bitbucket_client.get_tags.assert_called_once_with("PROJ", "my-repo", filter_text="v1.*")
+
+
+def test_tag_create_lightweight(runner, mock_bitbucket_client):
+    mock_bitbucket_client.create_tag.return_value = {
+        "id": "refs/tags/v1.0",
+        "displayId": "v1.0",
+        "type": "TAG",
+    }
+
+    result = runner.invoke(
+        cli,
+        [
+            "bitbucket",
+            "tag",
+            "create",
+            "PROJ",
+            "my-repo",
+            "--name",
+            "v1.0",
+            "--from",
+            "main",
+        ],
+    )
+    assert result.exit_code == 0
+    data = json.loads(result.output)
+    assert data["success"] is True
+    assert "Lightweight tag" in data["message"]
+    mock_bitbucket_client.create_tag.assert_called_once_with(
+        "PROJ", "my-repo", "v1.0", "main", message=None
+    )
+
+
+def test_tag_create_annotated(runner, mock_bitbucket_client):
+    mock_bitbucket_client.create_tag.return_value = {
+        "id": "refs/tags/v1.0",
+        "displayId": "v1.0",
+        "type": "ANNOTATED_TAG",
+    }
+
+    result = runner.invoke(
+        cli,
+        [
+            "bitbucket",
+            "tag",
+            "create",
+            "PROJ",
+            "my-repo",
+            "--name",
+            "v1.0",
+            "--from",
+            "abc123",
+            "--message",
+            "Release v1.0",
+        ],
+    )
+    assert result.exit_code == 0
+    data = json.loads(result.output)
+    assert data["success"] is True
+    assert "Annotated tag" in data["message"]
+    mock_bitbucket_client.create_tag.assert_called_once_with(
+        "PROJ", "my-repo", "v1.0", "abc123", message="Release v1.0"
+    )

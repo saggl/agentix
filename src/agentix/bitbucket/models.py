@@ -63,6 +63,17 @@ def normalize_branch(branch: Dict[str, Any]) -> Dict[str, Any]:
     }
 
 
+def normalize_tag(tag: Dict[str, Any]) -> Dict[str, Any]:
+    """Flatten a Bitbucket tag into a clean dict."""
+    return {
+        "id": tag.get("id", ""),
+        "displayId": tag.get("displayId", ""),
+        "type": tag.get("type", ""),
+        "latestCommit": tag.get("latestCommit", ""),
+        "hash": tag.get("hash", ""),
+    }
+
+
 def normalize_pull_request(pr: Dict[str, Any]) -> Dict[str, Any]:
     """Flatten a Bitbucket pull request into a clean dict."""
     author = pr.get("author", {}).get("user", {})

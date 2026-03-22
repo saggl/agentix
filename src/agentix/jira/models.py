@@ -104,6 +104,30 @@ def normalize_project(project: Dict[str, Any]) -> Dict[str, Any]:
     }
 
 
+def normalize_component(component: Dict[str, Any]) -> Dict[str, Any]:
+    """Normalize a Jira component."""
+    return {
+        "id": component.get("id", ""),
+        "name": component.get("name", ""),
+        "description": component.get("description", ""),
+        "lead": _nested_display_direct(component, "lead"),
+        "project": component.get("project", ""),
+    }
+
+
+def normalize_version(version: Dict[str, Any]) -> Dict[str, Any]:
+    """Normalize a Jira version."""
+    return {
+        "id": version.get("id", ""),
+        "name": version.get("name", ""),
+        "description": version.get("description", ""),
+        "released": version.get("released", False),
+        "archived": version.get("archived", False),
+        "startDate": version.get("startDate", ""),
+        "releaseDate": version.get("releaseDate", ""),
+    }
+
+
 def normalize_transition(t: Dict[str, Any]) -> Dict[str, Any]:
     return {
         "id": t.get("id", ""),

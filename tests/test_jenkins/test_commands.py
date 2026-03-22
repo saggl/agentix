@@ -182,6 +182,72 @@ def test_jenkins_build_abort(runner, mock_jenkins_client):
     mock_jenkins_client.abort_build.assert_called_once_with("my-job", 123)
 
 
+def test_jenkins_build_artifacts(runner, mock_jenkins_client):
+    mock_jenkins_client.get_build_artifacts.return_value = [
+        {
+            "fileName": "app.jar",
+            "relativePath": "target/app.jar",
+            "displayPath": "target/app.jar",
+        },
+        {
+            "fileName": "report.html",
+            "relativePath": "reports/test-report.html",
+            "displayPath": "reports/test-report.html",
+        },
+    ]
+
+    result = runner.invoke(cli, ["jenkins", "build", "artifacts", "my-job"])
+    assert result.exit_code == 0
+    data = json.loads(result.output)
+    assert len(data) == 2
+    assert data[0]["fileName"] == "app.jar"
+    mock_jenkins_client.get_build_artifacts.assert_called_once_with("my-job", build_number=None)
+
+
+def test_jenkins_build_artifacts_specific_build(runner, mock_jenkins_client):
+    mock_jenkins_client.get_build_artifacts.return_value = [
+        {"fileName": "app.jar", "relativePath": "target/app.jar"},
+    ]
+
+    result = runner.invoke(
+        cli, ["jenkins", "build", "artifacts", "my-job", "--build-number", "42"]
+    )
+    assert result.exit_code == 0
+    mock_jenkins_client.get_build_artifacts.assert_called_once_with("my-job", build_number=42)
+
+
+def test_jenkins_build_download(runner, mock_jenkins_client, tmp_path):
+    output_file = tmp_path / "artifact.jar"
+
+    # Mock the streaming download method to write test content
+    def mock_download_to_file(job, artifact, output_path, build_number=None):
+        with open(output_path, 'wb') as f:
+            f.write(b"binary content here")
+
+    mock_jenkins_client.download_artifact_to_file.side_effect = mock_download_to_file
+
+    result = runner.invoke(
+        cli,
+        [
+            "jenkins",
+            "build",
+            "download",
+            "my-job",
+            "--artifact",
+            "target/app.jar",
+            "--output",
+            str(output_file),
+        ],
+    )
+    assert result.exit_code == 0
+    data = json.loads(result.output)
+    assert data["success"] is True
+    assert output_file.read_bytes() == b"binary content here"
+    mock_jenkins_client.download_artifact_to_file.assert_called_once_with(
+        "my-job", "target/app.jar", str(output_file), build_number=None
+    )
+
+
 def test_jenkins_pipeline_stages(runner, mock_jenkins_client):
     mock_jenkins_client.get_pipeline_stages.return_value = [
         {"id": "1", "name": "Build", "status": "SUCCESS", "durationMillis": 30000},

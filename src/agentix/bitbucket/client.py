@@ -183,6 +183,50 @@ class BitbucketClient:
             json={"name": branch_id},
         )
 
+    # -- Tags --
+
+    def get_tags(
+        self,
+        project_key: str,
+        repo_slug: str,
+        filter_text: Optional[str] = None,
+    ) -> List[Dict[str, Any]]:
+        """List tags in a repository."""
+        params = {"filterText": filter_text} if filter_text else {}
+
+        return list(
+            self.http.paginate(
+                f"{self._api}/projects/{project_key}/repos/{repo_slug}/tags",
+                params=params,
+                results_key="values",
+                start_key="start",
+                max_key="limit",
+            )
+        )
+
+    def create_tag(
+        self,
+        project_key: str,
+        repo_slug: str,
+        name: str,
+        start_point: str,
+        message: Optional[str] = None,
+    ) -> Dict[str, Any]:
+        """Create a lightweight or annotated tag."""
+        body: Dict[str, Any] = {
+            "name": name,
+            "startPoint": start_point,
+        }
+        if message:
+            body["message"] = message
+            body["type"] = "ANNOTATED"
+
+        # Tag creation uses Git REST API 1.0
+        return self.http.post(
+            f"/rest/git/1.0/projects/{project_key}/repos/{repo_slug}/tags",
+            json=body,
+        )
+
     # -- Pull Requests --
 
     def get_pull_requests(

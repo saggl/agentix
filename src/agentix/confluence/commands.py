@@ -3,6 +3,7 @@
 import click
 
 from agentix.core.auth import resolve_auth
+from agentix.core.exceptions import AgentixError
 from agentix.confluence.client import ConfluenceClient
 from agentix.confluence.models import (
     normalize_attachment,
@@ -128,6 +129,32 @@ def page_move(ctx, page_id, target_parent):
     ctx.obj["formatter"].success(f"Moved page {page_id} under {target_parent}")
 
 
+@page_group.command("children")
+@click.argument("page_id")
+@click.option("--max-results", type=int, help="Maximum results to return.")
+@click.pass_context
+def page_children(ctx, page_id, max_results):
+    """List child pages of a page."""
+    client = _get_client(ctx)
+    children = client.get_page_children(page_id, max_results=max_results)
+    ctx.obj["formatter"].output([normalize_page_brief(c) for c in children])
+
+
+@page_group.command("find")
+@click.option("--space", "-s", required=True, help="Space key.")
+@click.option("--title", "-t", required=True, help="Page title.")
+@click.pass_context
+def page_find(ctx, space, title):
+    """Find a page by title in a space."""
+    client = _get_client(ctx)
+    page = client.get_page_by_title(space, title)
+    if page:
+        ctx.obj["formatter"].output(normalize_page(page))
+    else:
+        ctx.obj["formatter"].error(AgentixError(f"Page '{title}' not found in space '{space}'"))
+        ctx.exit(1)
+
+
 # -- Comment commands --
 
 
@@ -244,6 +271,20 @@ def space_get(ctx, space_id):
     client = _get_client(ctx)
     space = client.get_space(space_id)
     ctx.obj["formatter"].output(normalize_space(space))
+
+
+@space_group.command("find")
+@click.option("--key", "-k", required=True, help="Space key.")
+@click.pass_context
+def space_find(ctx, key):
+    """Find a space by its key."""
+    client = _get_client(ctx)
+    space = client.get_space_by_key(key)
+    if space:
+        ctx.obj["formatter"].output(normalize_space(space))
+    else:
+        ctx.obj["formatter"].error(AgentixError(f"Space '{key}' not found"))
+        ctx.exit(1)
 
 
 # -- Search --
