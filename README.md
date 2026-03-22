@@ -22,6 +22,12 @@ uv tool install agentix-cli
 
 This installs agentix in an isolated environment and adds it to your PATH.
 
+### Using pip
+
+```bash
+pip install agentix-cli
+```
+
 ## Quick Start
 
 ### 1. Configure
