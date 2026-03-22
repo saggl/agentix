@@ -1,6 +1,6 @@
 """Response normalization for Bitbucket API data."""
 
-from typing import Any, Dict, List
+from typing import Any, Dict
 
 
 def normalize_project(project: Dict[str, Any]) -> Dict[str, Any]:
