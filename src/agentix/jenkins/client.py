@@ -4,7 +4,26 @@ import time
 from typing import Any, Dict, List, Optional
 from urllib.parse import quote as urlquote
 
+import requests
+
 from agentix.core.http import BaseHTTPClient
+
+
+def _parse_jenkins_error(response: requests.Response) -> Optional[str]:
+    """Parse Jenkins error payloads into a concise message."""
+    # Jenkins often returns plain text/HTML; rely on generic parser fallback.
+    try:
+        body = response.json()
+    except ValueError:
+        return None
+
+    if isinstance(body, dict):
+        if isinstance(body.get("message"), str) and body["message"].strip():
+            return body["message"]
+        if isinstance(body.get("error"), str) and body["error"].strip():
+            return body["error"]
+
+    return None
 
 
 class JenkinsClient:
@@ -15,6 +34,7 @@ class JenkinsClient:
             base_url=base_url,
             auth=(username, api_token),
             auth_type=auth_type,
+            error_parser=_parse_jenkins_error,
         )
         self._crumb: Optional[Dict[str, str]] = None
 
