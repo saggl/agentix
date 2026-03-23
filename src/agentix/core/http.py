@@ -3,7 +3,7 @@
 import logging
 import random
 import time
-from typing import Any, Dict, Iterator, Optional, Tuple, Union
+from typing import Any, Callable, Dict, Iterator, Optional, Tuple, Union
 
 import requests
 from requests.auth import HTTPBasicAuth
@@ -35,12 +35,14 @@ class BaseHTTPClient:
         max_retries: int = 2,
         retry_backoff_base: float = 0.25,
         retry_backoff_max: float = 2.0,
+        error_parser: Optional[Callable[[requests.Response], Optional[str]]] = None,
     ):
         self.base_url = base_url.rstrip("/")
         self.timeout = timeout
         self.max_retries = max(0, max_retries)
         self.retry_backoff_base = max(0.0, retry_backoff_base)
         self.retry_backoff_max = max(0.0, retry_backoff_max)
+        self.error_parser = error_parser
         self.session = requests.Session()
 
         if auth:
@@ -65,6 +67,51 @@ class BaseHTTPClient:
         if path.startswith("http://") or path.startswith("https://"):
             return path
         return f"{self.base_url}/{path.lstrip('/')}"
+
+    def _default_error_message(self, response: requests.Response) -> str:
+        """Extract a useful error message from common JSON error payloads."""
+        try:
+            body = response.json()
+        except ValueError:
+            return response.text
+
+        if isinstance(body, dict):
+            # Jira-style: {"errorMessages": [...], "errors": {...}}
+            if "errorMessages" in body and isinstance(body["errorMessages"], list):
+                messages = [str(m) for m in body["errorMessages"] if m]
+                if messages:
+                    return "; ".join(messages)
+
+            if "errors" in body and isinstance(body["errors"], dict):
+                messages = [f"{k}: {v}" for k, v in body["errors"].items() if v]
+                if messages:
+                    return "; ".join(messages)
+
+            # Bitbucket/Jenkins/Confluence common variants
+            for key in ("message", "error", "detail"):
+                value = body.get(key)
+                if isinstance(value, str) and value.strip():
+                    return value
+
+        if isinstance(body, list):
+            messages = [str(item) for item in body if item]
+            if messages:
+                return "; ".join(messages)
+
+        return response.text
+
+    def _parse_error_message(self, response: requests.Response) -> str:
+        """Parse an API error message using service-specific parser if configured."""
+        if self.error_parser is not None:
+            try:
+                parsed = self.error_parser(response)
+                if parsed:
+                    return parsed
+            except Exception as e:
+                logger.debug("Custom error parser failed: %s", e)
+
+        msg = self._default_error_message(response)
+        return msg or response.text
 
     def _handle_response(self, response: requests.Response) -> Any:
         logger.debug(
@@ -105,13 +152,7 @@ class BaseHTTPClient:
                 details={"body": response.text[:500]},
             )
         if not response.ok:
-            try:
-                body = response.json()
-                msg = body.get("errorMessages", [response.text])
-                if isinstance(msg, list):
-                    msg = "; ".join(msg) if msg else response.text
-            except ValueError:
-                msg = response.text
+            msg = self._parse_error_message(response)
             raise AgentixError(
                 f"HTTP {response.status_code}: {msg}",
                 status_code=response.status_code,

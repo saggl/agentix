@@ -4,6 +4,7 @@ import pytest
 import responses
 
 from agentix.core.exceptions import (
+    AgentixError,
     AuthenticationError,
     NetworkError,
     NotFoundError,
@@ -234,3 +235,45 @@ def test_get_retries_on_429_then_raises_rate_limit(client):
 
     # initial try + 2 retries (default)
     assert len(responses.calls) == 3
+
+
+@responses.activate
+def test_default_error_parser_uses_errors_dict(client):
+    client.max_retries = 0
+    responses.add(
+        responses.GET,
+        "https://api.example.com/bad",
+        json={"errors": {"summary": "is required"}},
+        status=400,
+    )
+
+    with pytest.raises(AgentixError) as exc:
+        client.get("/bad")
+
+    assert "summary: is required" in str(exc.value)
+
+
+@responses.activate
+def test_custom_error_parser_override():
+    def custom_parser(_response):
+        return "custom service error"
+
+    custom_client = BaseHTTPClient(
+        base_url="https://api.example.com",
+        auth=("user", "token"),
+        retry_backoff_base=0.0,
+        max_retries=0,
+        error_parser=custom_parser,
+    )
+
+    responses.add(
+        responses.GET,
+        "https://api.example.com/bad",
+        json={"message": "ignored"},
+        status=400,
+    )
+
+    with pytest.raises(AgentixError) as exc:
+        custom_client.get("/bad")
+
+    assert "custom service error" in str(exc.value)
