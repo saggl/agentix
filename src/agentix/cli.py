@@ -114,6 +114,9 @@ def main():
             sys.exit(e.exit_code)
         elif isinstance(e, click.exceptions.Abort):
             sys.exit(130)
+        elif isinstance(e, click.ClickException):
+            e.show()
+            sys.exit(e.exit_code)
         elif isinstance(e, click.exceptions.Exit):
             sys.exit(e.exit_code)
         else:

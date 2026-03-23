@@ -176,6 +176,6 @@ def path(ctx):
     cm = ctx.obj["config_manager"]
     formatter = ctx.obj["formatter"]
     if formatter.fmt == "json":
-        print(json.dumps({"path": str(cm.config_path), "exists": cm.exists()}))
+        click.echo(json.dumps({"path": str(cm.config_path), "exists": cm.exists()}))
     else:
-        print(cm.config_path)
+        click.echo(cm.config_path)
