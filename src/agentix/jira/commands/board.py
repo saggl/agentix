@@ -1,6 +1,7 @@
 """Board commands for Jira."""
 
-from ._common import _get_client, click, normalize_board
+from agentix.jira.models import normalize_board
+from ._common import _get_client, click
 
 
 @click.group("board")

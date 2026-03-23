@@ -1,6 +1,7 @@
 """Attachment commands for Jira."""
 
-from ._common import _get_client, click, normalize_attachment
+from agentix.jira.models import normalize_attachment
+from ._common import _get_client, click
 
 
 @click.group("attachment")

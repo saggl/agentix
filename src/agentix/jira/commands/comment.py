@@ -1,6 +1,7 @@
 """Comment commands for Jira."""
 
-from ._common import _get_client, click, normalize_comment
+from agentix.jira.models import normalize_comment
+from ._common import _get_client, click
 
 
 @click.group("comment")

@@ -1,6 +1,7 @@
 """Version commands for Jira."""
 
-from ._common import _get_client, click, normalize_version
+from agentix.jira.models import normalize_version
+from ._common import _get_client, click
 
 
 @click.group("version")

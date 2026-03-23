@@ -1,6 +1,7 @@
 """Project commands for Jira."""
 
-from ._common import _get_client, click, normalize_project
+from agentix.jira.models import normalize_project
+from ._common import _get_client, click
 
 
 @click.group("project")

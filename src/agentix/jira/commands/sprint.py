@@ -1,6 +1,7 @@
 """Sprint commands for Jira."""
 
-from ._common import _get_client, click, normalize_issue_brief, normalize_sprint
+from agentix.jira.models import normalize_issue_brief, normalize_sprint
+from ._common import _get_client, click
 
 
 @click.group("sprint")

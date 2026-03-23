@@ -1,6 +1,8 @@
 """Issue commands for Jira."""
 
-from ._common import AgentixError, _get_client, click, normalize_issue, normalize_issue_brief, normalize_transition
+from agentix.core.exceptions import AgentixError
+from agentix.jira.models import normalize_issue, normalize_issue_brief, normalize_transition
+from ._common import _get_client, click
 
 
 @click.group("issue")

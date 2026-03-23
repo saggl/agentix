@@ -1,6 +1,7 @@
 """Component commands for Jira."""
 
-from ._common import _get_client, click, normalize_component
+from agentix.jira.models import normalize_component
+from ._common import _get_client, click
 
 
 @click.group("component")
