@@ -27,7 +27,12 @@ def issue_get(ctx, issue_key):
 @click.option("--assignee", help="Filter by assignee.")
 @click.option("--status", help="Filter by status.")
 @click.option("--type", "issue_type", help="Filter by issue type.")
-@click.option("--max-results", default=50, type=int, help="Max results (default: 50).")
+@click.option(
+    "--max-results",
+    default=50,
+    type=click.IntRange(1),
+    help="Max results (default: 50).",
+)
 @click.pass_context
 def issue_list(ctx, project, jql, assignee, status, issue_type, max_results):
     """List issues."""

@@ -347,7 +347,7 @@ def test_jira_version_update(runner, mock_jira_client):
 
     result = runner.invoke(
         cli,
-        ["jira", "version", "update", "10100", "--released", "true"],
+        ["jira", "version", "update", "10100", "--released"],
     )
     assert result.exit_code == 0
     data = json.loads(result.output)

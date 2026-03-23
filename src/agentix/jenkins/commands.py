@@ -156,7 +156,7 @@ def build_log(ctx, job_name, build_number, tail):
 
 @build_group.command("list")
 @click.argument("job_name")
-@click.option("--max-results", default=10, type=int, help="Max results.")
+@click.option("--max-results", default=10, type=click.IntRange(1), help="Max results.")
 @click.pass_context
 def build_list(ctx, job_name, max_results):
     """List recent builds."""

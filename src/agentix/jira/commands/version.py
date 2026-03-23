@@ -49,7 +49,12 @@ def version_create(ctx, project, name, description, start_date, release_date, re
 @click.argument("version_id")
 @click.option("--name", "-n", help="New version name.")
 @click.option("--description", "-d", help="New description.")
-@click.option("--released", type=bool, help="Released status (true/false).")
+@click.option(
+    "--released/--unreleased",
+    "released",
+    default=None,
+    help="Set released status.",
+)
 @click.option("--release-date", help="Release date (YYYY-MM-DD).")
 @click.pass_context
 def version_update(ctx, version_id, name, description, released, release_date):
