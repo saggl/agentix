@@ -5,7 +5,6 @@ import logging
 import subprocess
 import sys
 from datetime import datetime, timedelta, timezone
-from pathlib import Path
 from typing import Optional
 
 import requests
@@ -27,11 +26,6 @@ PYPI_API_URL = "https://pypi.org/pypi/agentix-cli/json"
 
 # Request timeout in seconds
 REQUEST_TIMEOUT = 5
-
-
-def _get_cache_path() -> Path:
-    """Get the path to the update check cache file."""
-    return CACHE_FILE
 
 
 def _read_cache() -> Optional[dict]:
