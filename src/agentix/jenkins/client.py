@@ -5,6 +5,7 @@ from urllib.parse import quote as urlquote
 
 import requests
 
+from agentix.core.exceptions import AgentixError
 from agentix.core.http import BaseHTTPClient
 from agentix.jenkins.client_methods import JenkinsMethods
 
@@ -51,7 +52,7 @@ class JenkinsClient(JenkinsMethods):
                 self._crumb = {
                     data["crumbRequestField"]: data["crumb"]
                 }
-            except Exception:
+            except (AgentixError, KeyError, TypeError):
                 self._crumb = {}
         return self._crumb
 

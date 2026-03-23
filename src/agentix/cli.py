@@ -98,11 +98,8 @@ def _notify_update_available() -> None:
 
 def main():
     """Entry point for the agentix CLI."""
-    try:
-        _notify_update_available()
-    except Exception:
-        # Non-blocking hint only; never fail command execution.
-        pass
+    # Non-blocking by design: update helper handles its own failures.
+    _notify_update_available()
 
     try:
         cli(standalone_mode=False)
