@@ -75,3 +75,18 @@ def test_self_update_apply_auto(runner):
     assert data["success"] is True
     assert data["data"]["method"] == "uv"
     mock_upgrade.assert_called_once_with("uv")
+
+
+def test_update_command_alias(runner):
+    with patch("agentix.commands.self_update.detect_installation_method") as mock_detect, patch(
+        "agentix.commands.self_update.perform_upgrade"
+    ) as mock_upgrade:
+        mock_detect.return_value = "pip"
+
+        result = runner.invoke(cli, ["update"])
+
+    assert result.exit_code == 0
+    data = json.loads(result.output)
+    assert data["success"] is True
+    assert data["data"]["method"] == "pip"
+    mock_upgrade.assert_called_once_with("pip")

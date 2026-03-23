@@ -14,7 +14,7 @@ except ImportError:
 
 from agentix import __version__
 from agentix.commands.schema import schema_command
-from agentix.commands.self_update import self_update_group
+from agentix.commands.self_update import self_update_group, update_command
 from agentix.config.commands import config_group
 from agentix.config.manager import ConfigManager
 from agentix.core.exceptions import AgentixError
@@ -69,10 +69,42 @@ cli.add_command(jenkins_group)
 cli.add_command(bitbucket_group)
 cli.add_command(schema_command)
 cli.add_command(self_update_group)
+cli.add_command(update_command)
+
+
+def _notify_update_available() -> None:
+    """Check for updates (throttled by cache) and print a hint when available."""
+    from agentix.core.auto_update import (
+        _write_cache,
+        get_latest_version,
+        is_update_available,
+        should_check_for_update,
+    )
+
+    if not should_check_for_update():
+        return
+
+    latest = get_latest_version()
+    if not latest:
+        return
+
+    _write_cache(latest)
+
+    if is_update_available(__version__, latest):
+        click.echo(
+            f"New agentix version available: {__version__} -> {latest}. Run: agentix update",
+            err=True,
+        )
 
 
 def main():
     """Entry point for the agentix CLI."""
+    try:
+        _notify_update_available()
+    except Exception:
+        # Non-blocking hint only; never fail command execution.
+        pass
+
     try:
         cli(standalone_mode=False)
     except Exception as e:

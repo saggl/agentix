@@ -34,6 +34,7 @@ def test_schema_root_command(runner):
     assert "config" in subcommand_names
     assert "schema" in subcommand_names
     assert "self-update" in subcommand_names
+    assert "update" in subcommand_names
 
     # Verify global options
     option_names = [opt["name"] for opt in data["options"]]
