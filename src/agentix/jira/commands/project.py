@@ -1,7 +1,7 @@
 """Project commands for Jira."""
 
 from agentix.jira.models import normalize_project
-from ._common import _get_client, click
+from ._common import _get_client, click, output
 
 
 @click.group("project")
@@ -16,7 +16,7 @@ def project_list(ctx):
     """List projects."""
     client = _get_client(ctx)
     projects = client.get_projects()
-    ctx.obj["formatter"].output([normalize_project(p) for p in projects])
+    output(ctx, [normalize_project(p) for p in projects])
 
 
 @project_group.command("get")
@@ -26,4 +26,4 @@ def project_get(ctx, project_key):
     """Get project details."""
     client = _get_client(ctx)
     project = client.get_project(project_key)
-    ctx.obj["formatter"].output(normalize_project(project))
+    output(ctx, normalize_project(project))

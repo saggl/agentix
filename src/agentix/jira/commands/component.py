@@ -1,7 +1,7 @@
 """Component commands for Jira."""
 
 from agentix.jira.models import normalize_component
-from ._common import _get_client, click
+from ._common import _get_client, click, output, success
 
 
 @click.group("component")
@@ -17,7 +17,7 @@ def component_list(ctx, project):
     """List components in a project."""
     client = _get_client(ctx)
     components = client.get_project_components(project)
-    ctx.obj["formatter"].output([normalize_component(c) for c in components])
+    output(ctx, [normalize_component(c) for c in components])
 
 
 @component_group.command("create")
@@ -32,7 +32,7 @@ def component_create(ctx, project, name, description, lead):
     result = client.create_component(
         project, name, description=description, lead_account_id=lead
     )
-    ctx.obj["formatter"].success(
+    success(ctx, 
         f"Created component '{name}' in {project}",
         data={"id": result.get("id"), "name": result.get("name")},
     )
@@ -50,7 +50,7 @@ def component_update(ctx, component_id, name, description, lead):
     result = client.update_component(
         component_id, name=name, description=description, lead_account_id=lead
     )
-    ctx.obj["formatter"].success(
+    success(ctx, 
         f"Updated component {component_id}", data=normalize_component(result)
     )
 
@@ -65,4 +65,4 @@ def component_delete(ctx, component_id, yes):
         click.confirm(f"Delete component {component_id}?", abort=True)
     client = _get_client(ctx)
     client.delete_component(component_id)
-    ctx.obj["formatter"].success(f"Deleted component {component_id}")
+    success(ctx, f"Deleted component {component_id}")

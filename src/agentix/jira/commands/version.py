@@ -1,7 +1,7 @@
 """Version commands for Jira."""
 
 from agentix.jira.models import normalize_version
-from ._common import _get_client, click
+from ._common import _get_client, click, output, success
 
 
 @click.group("version")
@@ -17,7 +17,7 @@ def version_list(ctx, project):
     """List versions in a project."""
     client = _get_client(ctx)
     versions = client.get_project_versions(project)
-    ctx.obj["formatter"].output([normalize_version(v) for v in versions])
+    output(ctx, [normalize_version(v) for v in versions])
 
 
 @version_group.command("create")
@@ -39,7 +39,7 @@ def version_create(ctx, project, name, description, start_date, release_date, re
         release_date=release_date,
         released=released,
     )
-    ctx.obj["formatter"].success(
+    success(ctx, 
         f"Created version '{name}' in {project}",
         data={"id": result.get("id"), "name": result.get("name")},
     )
@@ -62,7 +62,7 @@ def version_update(ctx, version_id, name, description, released, release_date):
         released=released,
         release_date=release_date,
     )
-    ctx.obj["formatter"].success(
+    success(ctx, 
         f"Updated version {version_id}", data=normalize_version(result)
     )
 
@@ -77,7 +77,7 @@ def version_delete(ctx, version_id, yes):
         click.confirm(f"Delete version {version_id}?", abort=True)
     client = _get_client(ctx)
     client.delete_version(version_id)
-    ctx.obj["formatter"].success(f"Deleted version {version_id}")
+    success(ctx, f"Deleted version {version_id}")
 
 
 @version_group.command("archive")
@@ -87,6 +87,6 @@ def version_archive(ctx, version_id):
     """Archive a version."""
     client = _get_client(ctx)
     result = client.archive_version(version_id)
-    ctx.obj["formatter"].success(
+    success(ctx, 
         f"Archived version {version_id}", data=normalize_version(result)
     )

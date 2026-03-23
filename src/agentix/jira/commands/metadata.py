@@ -1,6 +1,6 @@
 """Metadata commands for Jira."""
 
-from ._common import _get_client, click
+from ._common import _get_client, click, output
 
 
 @click.group("metadata")
@@ -16,7 +16,7 @@ def metadata_edit(ctx, issue_key):
     """Get available fields for editing an issue."""
     client = _get_client(ctx)
     metadata = client.get_issue_edit_metadata(issue_key)
-    ctx.obj["formatter"].output(metadata)
+    output(ctx, metadata)
 
 
 @metadata_group.command("create")
@@ -29,4 +29,4 @@ def metadata_create(ctx, project, issue_type):
     project_keys = list(project) if project else None
     issue_types = list(issue_type) if issue_type else None
     metadata = client.get_create_metadata(project_keys=project_keys, issue_type_names=issue_types)
-    ctx.obj["formatter"].output(metadata)
+    output(ctx, metadata)
