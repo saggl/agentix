@@ -46,6 +46,7 @@ dev = [
     "pytest-cov>=4.0",
     "responses>=0.23",
     "ruff>=0.4",
+    "mypy>=1.10",
 ]
 
 [project.scripts]
@@ -58,3 +59,13 @@ Issues = "https://github.com/saggl/agentix/issues"
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/agentix"]
+
+[tool.mypy]
+python_version = "3.11"
+ignore_missing_imports = true
+disable_error_code = ["import-untyped"]
+warn_unused_configs = true
+warn_redundant_casts = true
+warn_unused_ignores = true
+show_error_codes = true
+pretty = true
