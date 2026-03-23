@@ -11,6 +11,7 @@ from agentix.config.models import (
     JenkinsConfig,
     JiraConfig,
 )
+from agentix.core.exceptions import ConfigError
 
 
 @click.group("config")
@@ -142,7 +143,7 @@ def get(ctx, key):
     cm = ctx.obj["config_manager"]
     try:
         value = cm.get_value(key)
-    except Exception as e:
+    except ConfigError as e:
         ctx.obj["formatter"].error(e)
         ctx.exit(2)
         return

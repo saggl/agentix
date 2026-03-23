@@ -4,6 +4,7 @@ from typing import Any, Dict, List, Optional
 
 import requests
 
+from agentix.core.exceptions import AgentixError
 from agentix.core.http import BaseHTTPClient
 
 
@@ -486,8 +487,8 @@ class BitbucketClient:
         try:
             # For bearer auth (PAT), we need to use a different endpoint
             return self.http.get(f"{self._api}/users")
-        except Exception:
-            # Fallback for basic auth
+        except AgentixError:
+            # Fallback for auth modes/environments where this endpoint is unavailable
             return {}
 
     # -- Build Status --

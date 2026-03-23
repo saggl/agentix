@@ -107,7 +107,7 @@ class BaseHTTPClient:
                 parsed = self.error_parser(response)
                 if parsed:
                     return parsed
-            except Exception as e:
+            except (AttributeError, KeyError, TypeError, ValueError) as e:
                 logger.debug("Custom error parser failed: %s", e)
 
         msg = self._default_error_message(response)

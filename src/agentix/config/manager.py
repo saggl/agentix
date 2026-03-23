@@ -40,7 +40,7 @@ class ConfigManager:
         try:
             data = tomllib.loads(self.config_path.read_text(encoding="utf-8"))
             return AgentixConfig.from_dict(data)
-        except Exception as e:
+        except (OSError, tomllib.TOMLDecodeError, TypeError, ValueError) as e:
             raise ConfigError(
                 f"Failed to load config from {self.config_path}: {e}"
             ) from e

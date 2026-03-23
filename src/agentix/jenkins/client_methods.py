@@ -4,6 +4,8 @@ import time
 from typing import Any, Dict, List, Optional
 from urllib.parse import quote as urlquote
 
+from agentix.core.exceptions import AgentixError
+
 
 class JenkinsMethods:
     # -- Jobs --
@@ -125,7 +127,7 @@ class JenkinsMethods:
                     break
                 if queue_item.get("cancelled"):
                     return {"status": "cancelled", "queue_id": queue_id}
-            except Exception:
+            except AgentixError:
                 pass
             time.sleep(poll_interval)
 
