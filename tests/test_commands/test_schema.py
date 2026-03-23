@@ -33,7 +33,6 @@ def test_schema_root_command(runner):
     assert "bitbucket" in subcommand_names
     assert "config" in subcommand_names
     assert "schema" in subcommand_names
-    assert "self-update" in subcommand_names
     assert "update" in subcommand_names
 
     # Verify global options

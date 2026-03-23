@@ -14,7 +14,7 @@ except ImportError:
 
 from agentix import __version__
 from agentix.commands.schema import schema_command
-from agentix.commands.self_update import self_update_group, update_command
+from agentix.commands.self_update import update_command
 from agentix.config.commands import config_group
 from agentix.config.manager import ConfigManager
 from agentix.core.exceptions import AgentixError
@@ -68,7 +68,6 @@ cli.add_command(confluence_group)
 cli.add_command(jenkins_group)
 cli.add_command(bitbucket_group)
 cli.add_command(schema_command)
-cli.add_command(self_update_group)
 cli.add_command(update_command)
 
 
