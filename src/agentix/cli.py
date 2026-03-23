@@ -14,7 +14,7 @@ except ImportError:
 
 from agentix import __version__
 from agentix.commands.schema import schema_command
-from agentix.commands.self_update import update_command
+from agentix.commands.update import update_command
 from agentix.config.commands import config_group
 from agentix.config.manager import ConfigManager
 from agentix.core.exceptions import AgentixError
@@ -73,7 +73,7 @@ cli.add_command(update_command)
 
 def _notify_update_available() -> None:
     """Check for updates (throttled by cache) and print a hint when available."""
-    from agentix.core.auto_update import (
+    from agentix.core.update import (
         _write_cache,
         get_latest_version,
         is_update_available,

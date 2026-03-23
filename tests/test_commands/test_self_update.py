@@ -15,8 +15,8 @@ def runner():
 
 
 def test_update_command_alias(runner):
-    with patch("agentix.commands.self_update.detect_installation_method") as mock_detect, patch(
-        "agentix.commands.self_update.perform_upgrade"
+    with patch("agentix.commands.update.detect_installation_method") as mock_detect, patch(
+        "agentix.commands.update.perform_upgrade"
     ) as mock_upgrade:
         mock_detect.return_value = "pip"
 

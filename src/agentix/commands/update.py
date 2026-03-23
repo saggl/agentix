@@ -2,7 +2,7 @@
 
 import click
 
-from agentix.core.auto_update import detect_installation_method, perform_upgrade
+from agentix.core.update import detect_installation_method, perform_upgrade
 
 
 @click.command("update")

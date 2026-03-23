@@ -12,7 +12,7 @@ import requests
 
 from agentix import __version__
 from agentix.config.models import AgentixConfig
-from agentix.core.auto_update import (
+from agentix.core.update import (
     _read_cache,
     _write_cache,
     auto_update_if_needed,
@@ -28,7 +28,7 @@ from agentix.core.auto_update import (
 def mock_cache_file(tmp_path, monkeypatch):
     """Mock the cache file location to use a temporary directory."""
     cache_file = tmp_path / ".update_check"
-    monkeypatch.setattr("agentix.core.auto_update.CACHE_FILE", cache_file)
+    monkeypatch.setattr("agentix.core.update.CACHE_FILE", cache_file)
     return cache_file
 
 
@@ -93,7 +93,7 @@ class TestVersionComparison:
 class TestInstallationDetection:
     """Test installation method detection."""
 
-    @patch("agentix.core.auto_update.subprocess.run")
+    @patch("agentix.core.update.subprocess.run")
     def test_detect_uv_installation(self, mock_run):
         """Test detecting uv tool installation."""
         mock_run.return_value = Mock(
@@ -101,25 +101,25 @@ class TestInstallationDetection:
         )
         assert detect_installation_method() == "uv"
 
-    @patch("agentix.core.auto_update.subprocess.run")
+    @patch("agentix.core.update.subprocess.run")
     def test_detect_pip_installation_not_in_list(self, mock_run):
         """Test detecting pip when tool not in uv list."""
         mock_run.return_value = Mock(returncode=0, stdout="other-tool v1.0.0")
         assert detect_installation_method() == "pip"
 
-    @patch("agentix.core.auto_update.subprocess.run")
+    @patch("agentix.core.update.subprocess.run")
     def test_detect_pip_installation_uv_not_found(self, mock_run):
         """Test detecting pip when uv command not found."""
         mock_run.side_effect = FileNotFoundError()
         assert detect_installation_method() == "pip"
 
-    @patch("agentix.core.auto_update.subprocess.run")
+    @patch("agentix.core.update.subprocess.run")
     def test_detect_pip_installation_uv_fails(self, mock_run):
         """Test detecting pip when uv command fails."""
         mock_run.return_value = Mock(returncode=1)
         assert detect_installation_method() == "pip"
 
-    @patch("agentix.core.auto_update.subprocess.run")
+    @patch("agentix.core.update.subprocess.run")
     def test_detect_pip_installation_timeout(self, mock_run):
         """Test detecting pip when uv command times out."""
         mock_run.side_effect = subprocess.TimeoutExpired("uv", 5)
@@ -181,7 +181,7 @@ class TestCacheManagement:
         """Test that cache directory is created if it doesn't exist."""
         cache_dir = tmp_path / "new_dir"
         cache_file = cache_dir / ".update_check"
-        monkeypatch.setattr("agentix.core.auto_update.CACHE_FILE", cache_file)
+        monkeypatch.setattr("agentix.core.update.CACHE_FILE", cache_file)
 
         _write_cache("0.3.0")
         assert cache_file.exists()
@@ -190,7 +190,7 @@ class TestCacheManagement:
 class TestPyPIAPI:
     """Test PyPI API interaction."""
 
-    @patch("agentix.core.auto_update.requests.get")
+    @patch("agentix.core.update.requests.get")
     def test_get_latest_version_success(self, mock_get):
         """Test successful PyPI API response."""
         mock_response = Mock()
@@ -203,7 +203,7 @@ class TestPyPIAPI:
         assert result == "0.3.0"
         mock_get.assert_called_once()
 
-    @patch("agentix.core.auto_update.requests.get")
+    @patch("agentix.core.update.requests.get")
     def test_get_latest_version_network_error(self, mock_get):
         """Test handling of network errors."""
         mock_get.side_effect = requests.RequestException("Network error")
@@ -211,7 +211,7 @@ class TestPyPIAPI:
         result = get_latest_version()
         assert result is None
 
-    @patch("agentix.core.auto_update.requests.get")
+    @patch("agentix.core.update.requests.get")
     def test_get_latest_version_timeout(self, mock_get):
         """Test handling of request timeout."""
         mock_get.side_effect = requests.Timeout("Request timeout")
@@ -219,7 +219,7 @@ class TestPyPIAPI:
         result = get_latest_version()
         assert result is None
 
-    @patch("agentix.core.auto_update.requests.get")
+    @patch("agentix.core.update.requests.get")
     def test_get_latest_version_invalid_response(self, mock_get):
         """Test handling of invalid JSON response."""
         mock_response = Mock()
@@ -233,7 +233,7 @@ class TestPyPIAPI:
 class TestSubprocessExecution:
     """Test subprocess execution for upgrades."""
 
-    @patch("agentix.core.auto_update.subprocess.Popen")
+    @patch("agentix.core.update.subprocess.Popen")
     def test_perform_upgrade_uv(self, mock_popen):
         """Test that upgrade uses correct uv command."""
         perform_upgrade("uv")
@@ -245,7 +245,7 @@ class TestSubprocessExecution:
             start_new_session=True,
         )
 
-    @patch("agentix.core.auto_update.subprocess.Popen")
+    @patch("agentix.core.update.subprocess.Popen")
     def test_perform_upgrade_pip(self, mock_popen):
         """Test that upgrade uses correct pip command."""
         perform_upgrade("pip")
@@ -257,7 +257,7 @@ class TestSubprocessExecution:
             start_new_session=True,
         )
 
-    @patch("agentix.core.auto_update.subprocess.Popen")
+    @patch("agentix.core.update.subprocess.Popen")
     def test_perform_upgrade_defaults_to_uv(self, mock_popen):
         """Test that upgrade defaults to uv when no method specified."""
         perform_upgrade()
@@ -269,7 +269,7 @@ class TestSubprocessExecution:
             start_new_session=True,
         )
 
-    @patch("agentix.core.auto_update.subprocess.Popen")
+    @patch("agentix.core.update.subprocess.Popen")
     def test_perform_upgrade_handles_error(self, mock_popen):
         """Test that upgrade handles subprocess errors gracefully."""
         mock_popen.side_effect = OSError("Command not found")
@@ -281,9 +281,9 @@ class TestSubprocessExecution:
 class TestConfiguration:
     """Test configuration-based control of auto-update."""
 
-    @patch("agentix.core.auto_update.should_check_for_update")
-    @patch("agentix.core.auto_update.get_latest_version")
-    @patch("agentix.core.auto_update.perform_upgrade")
+    @patch("agentix.core.update.should_check_for_update")
+    @patch("agentix.core.update.get_latest_version")
+    @patch("agentix.core.update.perform_upgrade")
     def test_auto_update_disabled_via_config(
         self, mock_upgrade, mock_get_version, mock_should_check
     ):
@@ -298,9 +298,9 @@ class TestConfiguration:
         mock_get_version.assert_not_called()
         mock_upgrade.assert_not_called()
 
-    @patch("agentix.core.auto_update.should_check_for_update")
-    @patch("agentix.core.auto_update.get_latest_version")
-    @patch("agentix.core.auto_update.perform_upgrade")
+    @patch("agentix.core.update.should_check_for_update")
+    @patch("agentix.core.update.get_latest_version")
+    @patch("agentix.core.update.perform_upgrade")
     def test_auto_update_enabled_via_config(
         self, mock_upgrade, mock_get_version, mock_should_check
     ):
@@ -318,9 +318,9 @@ class TestConfiguration:
         mock_get_version.assert_called_once()
 
     @patch.dict(os.environ, {"AGENTIX_AUTO_UPDATE": "false"})
-    @patch("agentix.core.auto_update.should_check_for_update")
-    @patch("agentix.core.auto_update.get_latest_version")
-    @patch("agentix.core.auto_update.perform_upgrade")
+    @patch("agentix.core.update.should_check_for_update")
+    @patch("agentix.core.update.get_latest_version")
+    @patch("agentix.core.update.perform_upgrade")
     def test_auto_update_disabled_via_env_var(
         self, mock_upgrade, mock_get_version, mock_should_check
     ):
@@ -336,9 +336,9 @@ class TestConfiguration:
         mock_upgrade.assert_not_called()
 
     @patch.dict(os.environ, {"AGENTIX_AUTO_UPDATE": "true"})
-    @patch("agentix.core.auto_update.should_check_for_update")
-    @patch("agentix.core.auto_update.get_latest_version")
-    @patch("agentix.core.auto_update.perform_upgrade")
+    @patch("agentix.core.update.should_check_for_update")
+    @patch("agentix.core.update.get_latest_version")
+    @patch("agentix.core.update.perform_upgrade")
     def test_auto_update_enabled_via_env_var(
         self, mock_upgrade, mock_get_version, mock_should_check
     ):
@@ -356,7 +356,7 @@ class TestConfiguration:
         mock_get_version.assert_called_once()
 
     @patch.dict(os.environ, {"AGENTIX_AUTO_UPDATE": "0"})
-    @patch("agentix.core.auto_update.should_check_for_update")
+    @patch("agentix.core.update.should_check_for_update")
     def test_auto_update_env_var_variations(self, mock_should_check):
         """Test various env var values for disabling."""
         config = AgentixConfig()
@@ -371,11 +371,11 @@ class TestConfiguration:
 class TestIntegration:
     """Test end-to-end auto-update workflow."""
 
-    @patch("agentix.core.auto_update.detect_installation_method")
-    @patch("agentix.core.auto_update.should_check_for_update")
-    @patch("agentix.core.auto_update.get_latest_version")
-    @patch("agentix.core.auto_update.perform_upgrade")
-    @patch("agentix.core.auto_update._write_cache")
+    @patch("agentix.core.update.detect_installation_method")
+    @patch("agentix.core.update.should_check_for_update")
+    @patch("agentix.core.update.get_latest_version")
+    @patch("agentix.core.update.perform_upgrade")
+    @patch("agentix.core.update._write_cache")
     def test_auto_update_if_needed_update_available(
         self,
         mock_write_cache,
@@ -392,7 +392,7 @@ class TestIntegration:
         mock_get_version.return_value = "0.3.0"
         mock_detect.return_value = "uv"
 
-        with patch("agentix.core.auto_update.__version__", "0.2.0"):
+        with patch("agentix.core.update.__version__", "0.2.0"):
             auto_update_if_needed(config)
 
         # Should check, fetch version, write cache, detect method, and upgrade
@@ -402,10 +402,10 @@ class TestIntegration:
         mock_detect.assert_called_once()
         mock_upgrade.assert_called_once_with("uv")
 
-    @patch("agentix.core.auto_update.should_check_for_update")
-    @patch("agentix.core.auto_update.get_latest_version")
-    @patch("agentix.core.auto_update.perform_upgrade")
-    @patch("agentix.core.auto_update._write_cache")
+    @patch("agentix.core.update.should_check_for_update")
+    @patch("agentix.core.update.get_latest_version")
+    @patch("agentix.core.update.perform_upgrade")
+    @patch("agentix.core.update._write_cache")
     def test_auto_update_if_needed_no_update_available(
         self, mock_write_cache, mock_upgrade, mock_get_version, mock_should_check
     ):
@@ -424,9 +424,9 @@ class TestIntegration:
         mock_write_cache.assert_called_once_with(__version__)
         mock_upgrade.assert_not_called()
 
-    @patch("agentix.core.auto_update.should_check_for_update")
-    @patch("agentix.core.auto_update.get_latest_version")
-    @patch("agentix.core.auto_update.perform_upgrade")
+    @patch("agentix.core.update.should_check_for_update")
+    @patch("agentix.core.update.get_latest_version")
+    @patch("agentix.core.update.perform_upgrade")
     def test_auto_update_if_needed_cache_fresh(
         self, mock_upgrade, mock_get_version, mock_should_check
     ):
@@ -443,9 +443,9 @@ class TestIntegration:
         mock_get_version.assert_not_called()
         mock_upgrade.assert_not_called()
 
-    @patch("agentix.core.auto_update.should_check_for_update")
-    @patch("agentix.core.auto_update.get_latest_version")
-    @patch("agentix.core.auto_update.perform_upgrade")
+    @patch("agentix.core.update.should_check_for_update")
+    @patch("agentix.core.update.get_latest_version")
+    @patch("agentix.core.update.perform_upgrade")
     def test_auto_update_if_needed_pypi_failure(
         self, mock_upgrade, mock_get_version, mock_should_check
     ):
@@ -463,11 +463,11 @@ class TestIntegration:
         mock_get_version.assert_called_once()
         mock_upgrade.assert_not_called()
 
-    @patch("agentix.core.auto_update.detect_installation_method")
-    @patch("agentix.core.auto_update.should_check_for_update")
-    @patch("agentix.core.auto_update.get_latest_version")
-    @patch("agentix.core.auto_update.perform_upgrade")
-    @patch("agentix.core.auto_update._write_cache")
+    @patch("agentix.core.update.detect_installation_method")
+    @patch("agentix.core.update.should_check_for_update")
+    @patch("agentix.core.update.get_latest_version")
+    @patch("agentix.core.update.perform_upgrade")
+    @patch("agentix.core.update._write_cache")
     def test_auto_update_with_pip_installation(
         self,
         mock_write_cache,
@@ -484,7 +484,7 @@ class TestIntegration:
         mock_get_version.return_value = "0.3.0"
         mock_detect.return_value = "pip"
 
-        with patch("agentix.core.auto_update.__version__", "0.2.0"):
+        with patch("agentix.core.update.__version__", "0.2.0"):
             auto_update_if_needed(config)
 
         # Should detect method and pass to upgrade
