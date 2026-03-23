@@ -68,7 +68,11 @@ class Profile:
 @dataclass
 class Defaults:
     format: str = "json"
-    auto_update: bool = True
+
+    @classmethod
+    def from_dict(cls, data: Dict[str, Any]) -> "Defaults":
+        # Ignore legacy/unknown keys for forward/backward compatibility.
+        return cls(format=data.get("format", "json"))
 
 
 @dataclass
@@ -84,7 +88,7 @@ class AgentixConfig:
             profiles[name] = Profile.from_dict(pdata)
         return cls(
             default_profile=data.get("default_profile", "default"),
-            defaults=Defaults(**data.get("defaults", {})),
+            defaults=Defaults.from_dict(data.get("defaults", {})),
             profiles=profiles,
         )
 

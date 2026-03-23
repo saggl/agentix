@@ -69,9 +69,9 @@ def test_set_value_missing_key_raises(tmp_config):
         tmp_config.set_value("profiles.test.jira.does_not_exist", "x")
 
 
-def test_set_value_bool_coercion(tmp_config):
-    tmp_config.set_value("defaults.auto_update", "false")
-    assert tmp_config.get_value("defaults.auto_update") is False
+def test_defaults_from_legacy_data_ignores_auto_update_field():
+    cfg = AgentixConfig.from_dict({"defaults": {"format": "table", "auto_update": False}})
+    assert cfg.defaults.format == "table"
 
 
 def test_mask_tokens(tmp_config):

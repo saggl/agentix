@@ -12,7 +12,7 @@ agentix provides a consistent, JSON-first interface to Atlassian and Jenkins API
 - 🔐 **Modern Authentication**: Bearer token and API token support
 - 📋 **Human-Friendly**: Optional table output format for terminal use
 - ⚙️ **Multi-Profile**: Manage multiple environments (dev, staging, prod)
-- 🧪 **Well-Tested**: Comprehensive test suite with 300+ tests
+- 🧪 **Well-Tested**: Comprehensive test suite with 290+ tests
 
 ## Installation
 
@@ -318,7 +318,7 @@ agentix/
 │   ├── confluence/      # Confluence integration
 │   ├── jenkins/         # Jenkins integration
 │   └── bitbucket/       # Bitbucket integration
-├── tests/               # Test suite (300+ tests)
+├── tests/               # Test suite (290+ tests)
 ├── CLAUDE.md           # Development guidelines
 └── pyproject.toml      # Package configuration
 ```
