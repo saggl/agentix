@@ -1,8 +1,7 @@
-"""Auto-update functionality for agentix CLI."""
+"""Update support functionality for agentix CLI."""
 
 import json
 import logging
-import os
 import subprocess
 import sys
 from datetime import datetime, timedelta, timezone
@@ -13,7 +12,7 @@ import requests
 from packaging import version
 
 from agentix import __version__
-from agentix.config.models import AgentixConfig, get_config_dir
+from agentix.config.models import get_config_dir
 
 logger = logging.getLogger(__name__)
 
@@ -180,53 +179,3 @@ def perform_upgrade(method: str = "uv") -> None:
         logger.debug(f"Failed to start upgrade process with {method}: {e}")
 
 
-def auto_update_if_needed(config: AgentixConfig) -> None:
-    """Main entry point: check config, check version, upgrade if needed.
-
-    Args:
-        config: agentix configuration object
-
-    This function:
-    1. Checks if auto-update is enabled (env var or config)
-    2. Checks if we should query PyPI (based on cache age)
-    3. Fetches latest version from PyPI
-    4. Compares with current version
-    5. Triggers background upgrade if newer version available
-    """
-    # Check environment variable first (takes precedence)
-    env_auto_update = os.environ.get("AGENTIX_AUTO_UPDATE", "").lower()
-    if env_auto_update in ("false", "0", "no", "off"):
-        logger.debug("Auto-update disabled via environment variable")
-        return
-
-    # Check config setting
-    if not config.defaults.auto_update:
-        logger.debug("Auto-update disabled via config")
-        return
-
-    # Check if we should query PyPI
-    if not should_check_for_update():
-        logger.debug("Skipping update check (cache is fresh)")
-        return
-
-    # Fetch latest version from PyPI
-    latest = get_latest_version()
-    if not latest:
-        logger.debug("Could not fetch latest version from PyPI")
-        return
-
-    # Write to cache regardless of whether update is needed
-    _write_cache(latest)
-
-    # Compare versions
-    if is_update_available(__version__, latest):
-        logger.debug(f"Update available: {__version__} -> {latest}")
-
-        # Detect installation method
-        method = detect_installation_method()
-        logger.debug(f"Detected installation method: {method}")
-
-        # Perform upgrade using detected method
-        perform_upgrade(method)
-    else:
-        logger.debug(f"Already on latest version: {__version__}")
