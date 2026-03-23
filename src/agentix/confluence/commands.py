@@ -292,7 +292,7 @@ def space_find(ctx, key):
 
 @confluence_group.command("search")
 @click.argument("cql")
-@click.option("--max-results", default=25, type=int, help="Max results.")
+@click.option("--max-results", default=25, type=click.IntRange(1), help="Max results.")
 @click.pass_context
 def confluence_search(ctx, cql, max_results):
     """Search with CQL (Confluence Query Language)."""

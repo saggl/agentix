@@ -33,7 +33,7 @@ def sprint_get(ctx, sprint_id):
 
 @sprint_group.command("issues")
 @click.argument("sprint_id", type=int)
-@click.option("--max-results", default=50, type=int, help="Max results.")
+@click.option("--max-results", default=50, type=click.IntRange(1), help="Max results.")
 @click.pass_context
 def sprint_issues(ctx, sprint_id, max_results):
     """List issues in a sprint."""

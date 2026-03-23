@@ -32,7 +32,7 @@ def epic_get(ctx, epic_key):
 
 @epic_group.command("issues")
 @click.argument("epic_key")
-@click.option("--max-results", default=50, type=int, help="Max results.")
+@click.option("--max-results", default=50, type=click.IntRange(1), help="Max results.")
 @click.pass_context
 def epic_issues(ctx, epic_key, max_results):
     """List issues in an epic."""
