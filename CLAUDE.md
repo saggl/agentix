@@ -114,10 +114,14 @@ agentix/
 ├── src/agentix/          # Main package code
 │   ├── __init__.py       # Version and package init
 │   ├── __main__.py       # Entry point
-│   └── cli.py            # CLI implementation
+│   ├── cli.py            # CLI implementation
+│   ├── jira/             # Jira integration
+│   ├── confluence/       # Confluence integration
+│   ├── jenkins/          # Jenkins integration
+│   └── bitbucket/        # Bitbucket integration
 ├── tests/                # Test files
 ├── .github/workflows/    # CI/CD workflows
 ├── pyproject.toml        # Package configuration
 ├── .python-version       # Python version for uv
-└── CLAUDE.md            # This file
+└── CLAUDE.md             # This file
 ```

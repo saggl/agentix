@@ -13,7 +13,7 @@ dev = [
 [project]
 name = "agentix-cli"
 version = "0.2.0"
-description = "Unified CLI and SDK for Jira, Confluence, and Jenkins"
+description = "Unified CLI and SDK for Jira, Confluence, Jenkins, and Bitbucket"
 readme = "README.md"
 requires-python = ">=3.9"
 license = {text = "MIT"}
