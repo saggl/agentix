@@ -12,7 +12,7 @@ agentix provides a consistent, JSON-first interface to Atlassian and Jenkins API
 - 🔐 **Modern Authentication**: Bearer token and API token support
 - 📋 **Human-Friendly**: Optional table output format for terminal use
 - ⚙️ **Multi-Profile**: Manage multiple environments (dev, staging, prod)
-- 🧪 **Well-Tested**: Comprehensive test suite with 130+ tests
+- 🧪 **Well-Tested**: Comprehensive test suite with 300+ tests
 
 ## Installation
 
@@ -70,13 +70,13 @@ agentix jira issue get PROJ-123
 agentix jira issue create --project PROJ --summary "Fix bug" --type Bug
 
 # Search with JQL
-agentix jira search --jql "assignee = currentUser() AND status = 'In Progress'"
+agentix jira search "assignee = currentUser() AND status = 'In Progress'"
 
 # List projects
 agentix jira project list
 
 # Manage sprints
-agentix jira sprint list --board-id 123
+agentix jira sprint list --board 123
 agentix jira sprint get 456
 ```
 
@@ -114,21 +114,21 @@ agentix jenkins job list
 agentix jenkins job get my-pipeline
 
 # Trigger a build
-agentix jenkins job build my-pipeline
+agentix jenkins build trigger my-pipeline
 
 # Build with parameters
-agentix jenkins job build my-pipeline \
+agentix jenkins build trigger my-pipeline \
   -P ENVIRONMENT=staging \
   -P VERSION=1.2.3
 
 # Wait for build to complete
-agentix jenkins job build my-pipeline --wait --timeout 600
+agentix jenkins build trigger my-pipeline --wait --timeout 600
 
 # Get build status
 agentix jenkins build status my-pipeline
 
 # Get build logs
-agentix jenkins build logs my-pipeline --tail 50
+agentix jenkins build log my-pipeline --tail 50
 ```
 
 ### Bitbucket
@@ -210,6 +210,17 @@ export AGENTIX_DEFAULT_PROFILE=staging
 agentix jira issue list
 ```
 
+### Updates
+
+```bash
+# Apply update immediately (availability is hinted automatically on startup)
+agentix update
+
+# Force a specific installation method
+agentix update --method uv
+agentix update --method pip
+```
+
 ## For AI Agents & Automation
 
 ### Schema Introspection
@@ -256,6 +267,12 @@ This makes agentix ideal for:
 - 📚 Automated documentation
 - ✅ Integration testing
 
+### Stability Notes for Agent Integrations
+
+- Command paths and option names are treated as stable within minor versions.
+- JSON output fields may expand, but existing keys should remain backward-compatible.
+- Use `agentix schema` to discover capabilities dynamically instead of hardcoding assumptions.
+
 ### Local Development
 
 When developing locally, run commands via `uv`:
@@ -299,8 +316,9 @@ agentix/
 │   ├── core/            # Core utilities (auth, HTTP, output)
 │   ├── jira/            # Jira integration
 │   ├── confluence/      # Confluence integration
-│   └── jenkins/         # Jenkins integration
-├── tests/               # Test suite (67+ tests)
+│   ├── jenkins/         # Jenkins integration
+│   └── bitbucket/       # Bitbucket integration
+├── tests/               # Test suite (300+ tests)
 ├── CLAUDE.md           # Development guidelines
 └── pyproject.toml      # Package configuration
 ```
