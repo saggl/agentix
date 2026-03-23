@@ -15,7 +15,7 @@ import tomli_w
 
 from agentix.core.exceptions import ConfigError
 
-from .models import AgentixConfig, get_config_path
+from .models import AgentixConfig, Profile, get_config_path
 
 
 class ConfigManager:
@@ -64,32 +64,93 @@ class ConfigManager:
 
         self._config = cfg
 
+    def _split_key(self, key: str) -> list[str]:
+        parts = [p.strip() for p in key.split(".") if p.strip()]
+        if not parts:
+            raise ConfigError("Config key cannot be empty")
+        return parts
+
+    def _coerce_value(self, raw_value: str, expected: Any, key: str) -> Any:
+        """Coerce CLI string input to the expected target type."""
+        if isinstance(expected, bool):
+            lowered = raw_value.strip().lower()
+            if lowered in {"true", "1", "yes", "on"}:
+                return True
+            if lowered in {"false", "0", "no", "off"}:
+                return False
+            raise ConfigError(
+                f"Invalid boolean value for '{key}': {raw_value}. "
+                "Use true/false, 1/0, yes/no, or on/off."
+            )
+
+        if isinstance(expected, int) and not isinstance(expected, bool):
+            try:
+                return int(raw_value)
+            except ValueError as e:
+                raise ConfigError(
+                    f"Invalid integer value for '{key}': {raw_value}"
+                ) from e
+
+        if isinstance(expected, float):
+            try:
+                return float(raw_value)
+            except ValueError as e:
+                raise ConfigError(
+                    f"Invalid float value for '{key}': {raw_value}"
+                ) from e
+
+        # Default string behavior for config fields in this project.
+        return raw_value
+
+    def _get_child(self, current: Any, part: str, key: str, *, create_profile: bool = False) -> Any:
+        if isinstance(current, dict):
+            if part not in current:
+                if create_profile and current is self.config.profiles:
+                    current[part] = Profile()
+                else:
+                    raise ConfigError(f"Config key not found: {key}")
+            return current[part]
+
+        if hasattr(current, part):
+            return getattr(current, part)
+
+        raise ConfigError(f"Config key not found: {key}")
+
     def get_value(self, key: str) -> Any:
         """Get a config value by dotted key path (e.g., 'profiles.work.jira.base_url')."""
-        parts = key.split(".")
-        data = self.config.to_dict()
+        parts = self._split_key(key)
+        current: Any = self.config
+
         for part in parts:
-            if isinstance(data, dict) and part in data:
-                data = data[part]
-            else:
-                raise ConfigError(f"Config key not found: {key}")
-        return data
+            current = self._get_child(current, part, key)
+
+        # Return dict view for dataclass-like objects when useful for display.
+        if hasattr(current, "to_dict") and callable(current.to_dict):
+            return current.to_dict()
+        return current
 
     def set_value(self, key: str, value: str) -> None:
-        """Set a config value by dotted key path."""
-        parts = key.split(".")
-        data = self.config.to_dict()
+        """Set a config value by dotted key path with type-aware coercion."""
+        parts = self._split_key(key)
+        current: Any = self.config
 
-        # Navigate to parent
-        current = data
+        # Navigate to parent node.
         for part in parts[:-1]:
-            if part not in current:
-                current[part] = {}
-            current = current[part]
-        current[parts[-1]] = value
+            current = self._get_child(current, part, key, create_profile=True)
 
-        self._config = AgentixConfig.from_dict(data)
-        self.save()
+        leaf = parts[-1]
+
+        if isinstance(current, dict):
+            if leaf not in current:
+                raise ConfigError(f"Config key not found: {key}")
+            current[leaf] = self._coerce_value(value, current[leaf], key)
+        else:
+            if not hasattr(current, leaf):
+                raise ConfigError(f"Config key not found: {key}")
+            expected = getattr(current, leaf)
+            setattr(current, leaf, self._coerce_value(value, expected, key))
+
+        self.save(self.config)
 
     def mask_tokens(self) -> dict:
         """Return config dict with tokens/secrets masked."""

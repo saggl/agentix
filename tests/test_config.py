@@ -64,6 +64,16 @@ def test_set_value(tmp_config):
     assert tmp_config.get_value("profiles.test.jira.base_url") == "https://new.atlassian.net"
 
 
+def test_set_value_missing_key_raises(tmp_config):
+    with pytest.raises(ConfigError):
+        tmp_config.set_value("profiles.test.jira.does_not_exist", "x")
+
+
+def test_set_value_bool_coercion(tmp_config):
+    tmp_config.set_value("defaults.auto_update", "false")
+    assert tmp_config.get_value("defaults.auto_update") is False
+
+
 def test_mask_tokens(tmp_config):
     masked = tmp_config.mask_tokens()
     jira = masked["profiles"]["test"]["jira"]
@@ -77,6 +87,11 @@ def test_get_profile_creates_if_missing(tmp_config):
     profile = cfg.get_profile("new_profile")
     assert profile.jira.base_url == ""
     assert "new_profile" in cfg.profiles
+
+
+def test_set_value_creates_profile_if_missing(tmp_config):
+    tmp_config.set_value("profiles.work.jira.base_url", "https://work.atlassian.net")
+    assert tmp_config.get_value("profiles.work.jira.base_url") == "https://work.atlassian.net"
 
 
 def test_config_roundtrip(tmp_path):
