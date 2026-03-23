@@ -14,6 +14,7 @@ except ImportError:
 
 from agentix import __version__
 from agentix.commands.schema import schema_command
+from agentix.commands.self_update import self_update_group
 from agentix.config.commands import config_group
 from agentix.config.manager import ConfigManager
 from agentix.core.exceptions import AgentixError
@@ -67,20 +68,11 @@ cli.add_command(confluence_group)
 cli.add_command(jenkins_group)
 cli.add_command(bitbucket_group)
 cli.add_command(schema_command)
+cli.add_command(self_update_group)
 
 
 def main():
     """Entry point for the agentix CLI."""
-    # Check and perform auto-update if needed (non-blocking)
-    try:
-        config_manager = ConfigManager()
-        from agentix.core.auto_update import auto_update_if_needed
-
-        auto_update_if_needed(config_manager.config)
-    except Exception:
-        # Silently ignore auto-update failures to avoid breaking the CLI
-        pass
-
     try:
         cli(standalone_mode=False)
     except Exception as e:
