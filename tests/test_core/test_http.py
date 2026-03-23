@@ -18,6 +18,7 @@ def client():
     return BaseHTTPClient(
         base_url="https://api.example.com",
         auth=("user", "token"),
+        retry_backoff_base=0.0,
     )
 
 
@@ -91,6 +92,7 @@ def test_404_raises_not_found(client):
 
 @responses.activate
 def test_429_raises_rate_limit(client):
+    client.max_retries = 0
     responses.add(
         responses.GET,
         "https://api.example.com/limited",
@@ -102,6 +104,7 @@ def test_429_raises_rate_limit(client):
 
 @responses.activate
 def test_500_raises_server_error(client):
+    client.max_retries = 0
     responses.add(
         responses.GET,
         "https://api.example.com/broken",
@@ -171,3 +174,63 @@ def test_paginate_max_results(client):
     )
     items = list(client.paginate("/items", page_size=3, max_results=2))
     assert len(items) == 2
+
+
+@responses.activate
+def test_get_retries_on_500_then_succeeds(client):
+    responses.add(
+        responses.GET,
+        "https://api.example.com/flaky",
+        json={"error": "temporary"},
+        status=500,
+    )
+    responses.add(
+        responses.GET,
+        "https://api.example.com/flaky",
+        json={"result": "ok"},
+        status=200,
+    )
+
+    data = client.get("/flaky")
+    assert data["result"] == "ok"
+    assert len(responses.calls) == 2
+
+
+@responses.activate
+def test_post_does_not_retry_on_500(client):
+    responses.add(
+        responses.POST,
+        "https://api.example.com/create",
+        json={"error": "server exploded"},
+        status=500,
+    )
+
+    with pytest.raises(ServerError):
+        client.post("/create", json={"name": "x"})
+
+    assert len(responses.calls) == 1
+
+
+@responses.activate
+def test_get_retries_on_429_then_raises_rate_limit(client):
+    responses.add(
+        responses.GET,
+        "https://api.example.com/limited",
+        status=429,
+    )
+    responses.add(
+        responses.GET,
+        "https://api.example.com/limited",
+        status=429,
+    )
+    responses.add(
+        responses.GET,
+        "https://api.example.com/limited",
+        status=429,
+    )
+
+    with pytest.raises(RateLimitError):
+        client.get("/limited")
+
+    # initial try + 2 retries (default)
+    assert len(responses.calls) == 3

@@ -1,6 +1,8 @@
 """HTTP client wrapper for agentix."""
 
 import logging
+import random
+import time
 from typing import Any, Dict, Iterator, Optional, Tuple, Union
 
 import requests
@@ -30,9 +32,15 @@ class BaseHTTPClient:
         auth_type: str = "basic",
         headers: Optional[Dict[str, str]] = None,
         timeout: float = 30.0,
+        max_retries: int = 2,
+        retry_backoff_base: float = 0.25,
+        retry_backoff_max: float = 2.0,
     ):
         self.base_url = base_url.rstrip("/")
         self.timeout = timeout
+        self.max_retries = max(0, max_retries)
+        self.retry_backoff_base = max(0.0, retry_backoff_base)
+        self.retry_backoff_max = max(0.0, retry_backoff_max)
         self.session = requests.Session()
 
         if auth:
@@ -125,18 +133,74 @@ class BaseHTTPClient:
             # If JSON parsing fails, return as text
             return response.text
 
+    def _is_retryable_method(self, method: str) -> bool:
+        return method.upper() in {"GET", "HEAD", "OPTIONS", "PUT", "DELETE"}
+
+    def _should_retry_status(self, status_code: int) -> bool:
+        return status_code == 429 or status_code >= 500
+
+    def _sleep_for_retry(self, attempt: int) -> None:
+        if self.retry_backoff_base <= 0:
+            return
+        # Exponential backoff with a small jitter to avoid synchronized retries.
+        delay = min(
+            self.retry_backoff_max,
+            self.retry_backoff_base * (2 ** max(0, attempt - 1)),
+        )
+        jitter = delay * random.uniform(0.0, 0.2)
+        time.sleep(delay + jitter)
+
     def _request(self, method: str, path: str, **kwargs: Any) -> Any:
         kwargs.setdefault("timeout", self.timeout)
         url = self._url(path)
-        try:
-            response = self.session.request(method, url, **kwargs)
-        except requests.ConnectionError as e:
-            raise NetworkError(f"Connection failed: {e}") from e
-        except requests.Timeout as e:
-            raise NetworkError(f"Request timed out: {e}") from e
-        except requests.RequestException as e:
-            raise NetworkError(f"Request failed: {e}") from e
-        return self._handle_response(response)
+        retryable = self._is_retryable_method(method)
+
+        for attempt in range(1, self.max_retries + 2):
+            try:
+                response = self.session.request(method, url, **kwargs)
+            except requests.ConnectionError as e:
+                if retryable and attempt <= self.max_retries:
+                    logger.debug(
+                        "Retrying %s %s after connection error (attempt %d/%d)",
+                        method,
+                        url,
+                        attempt,
+                        self.max_retries + 1,
+                    )
+                    self._sleep_for_retry(attempt)
+                    continue
+                raise NetworkError(f"Connection failed: {e}") from e
+            except requests.Timeout as e:
+                if retryable and attempt <= self.max_retries:
+                    logger.debug(
+                        "Retrying %s %s after timeout (attempt %d/%d)",
+                        method,
+                        url,
+                        attempt,
+                        self.max_retries + 1,
+                    )
+                    self._sleep_for_retry(attempt)
+                    continue
+                raise NetworkError(f"Request timed out: {e}") from e
+            except requests.RequestException as e:
+                raise NetworkError(f"Request failed: {e}") from e
+
+            if retryable and self._should_retry_status(response.status_code) and attempt <= self.max_retries:
+                logger.debug(
+                    "Retrying %s %s after HTTP %d (attempt %d/%d)",
+                    method,
+                    url,
+                    response.status_code,
+                    attempt,
+                    self.max_retries + 1,
+                )
+                self._sleep_for_retry(attempt)
+                continue
+
+            return self._handle_response(response)
+
+        # Should be unreachable due to returns/raises above.
+        raise NetworkError("Request failed after retries")
 
     def get(self, path: str, params: Optional[Dict[str, Any]] = None) -> Any:
         return self._request("GET", path, params=params)
