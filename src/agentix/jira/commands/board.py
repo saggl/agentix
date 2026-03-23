@@ -1,7 +1,7 @@
 """Board commands for Jira."""
 
 from agentix.jira.models import normalize_board
-from ._common import _get_client, click
+from ._common import _get_client, click, output
 
 
 @click.group("board")
@@ -17,7 +17,7 @@ def board_list(ctx, project):
     """List boards."""
     client = _get_client(ctx)
     boards = client.get_boards(project)
-    ctx.obj["formatter"].output([normalize_board(b) for b in boards])
+    output(ctx, [normalize_board(b) for b in boards])
 
 
 @board_group.command("get")
@@ -27,4 +27,4 @@ def board_get(ctx, board_id):
     """Get board details."""
     client = _get_client(ctx)
     board = client.get_board(board_id)
-    ctx.obj["formatter"].output(normalize_board(board))
+    output(ctx, normalize_board(board))

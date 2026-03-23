@@ -5,6 +5,22 @@ import importlib
 import click
 
 
+def output(ctx: click.Context, data):
+    """Render command output using configured formatter."""
+    ctx.obj["formatter"].output(data)
+
+
+def success(ctx: click.Context, message: str, data=None):
+    """Render a success response using configured formatter."""
+    ctx.obj["formatter"].success(message, data=data)
+
+
+def error_exit(ctx: click.Context, exc, exit_code: int = 3):
+    """Render an error response and exit with a non-zero code."""
+    ctx.obj["formatter"].error(exc)
+    ctx.exit(exit_code)
+
+
 def _get_client(ctx: click.Context):
     """Build Jira client from resolved auth.
 

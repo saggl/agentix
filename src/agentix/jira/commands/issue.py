@@ -2,7 +2,7 @@
 
 from agentix.core.exceptions import AgentixError
 from agentix.jira.models import normalize_issue, normalize_issue_brief, normalize_transition
-from ._common import _get_client, click
+from ._common import _get_client, click, error_exit, output, success
 
 
 @click.group("issue")
@@ -18,7 +18,7 @@ def issue_get(ctx, issue_key):
     """Get issue details."""
     client = _get_client(ctx)
     issue = client.get_issue(issue_key)
-    ctx.obj["formatter"].output(normalize_issue(issue))
+    output(ctx, normalize_issue(issue))
 
 
 @issue_group.command("list")
@@ -49,7 +49,7 @@ def issue_list(ctx, project, jql, assignee, status, issue_type, max_results):
     client = _get_client(ctx)
     result = client.search_issues(jql, max_results=max_results)
     issues = [normalize_issue_brief(i) for i in result.get("issues", [])]
-    ctx.obj["formatter"].output(issues)
+    output(ctx, issues)
 
 
 @issue_group.command("create")
@@ -74,7 +74,7 @@ def issue_create(ctx, project, summary, issue_type, description, assignee, prior
         priority=priority,
         labels=label_list,
     )
-    ctx.obj["formatter"].success(
+    success(ctx, 
         f"Created issue {result.get('key', '')}",
         data={"key": result.get("key"), "id": result.get("id"), "self": result.get("self")},
     )
@@ -109,13 +109,12 @@ def issue_update(ctx, issue_key, summary, description, assignee, priority, label
         fields["labels"] = [lbl.strip() for lbl in labels.split(",")]
 
     if not fields:
-        ctx.obj["formatter"].error(AgentixError("No fields to update."))
-        ctx.exit(3)
+        error_exit(ctx, AgentixError("No fields to update."))
         return
 
     client = _get_client(ctx)
     client.update_issue(issue_key, fields)
-    ctx.obj["formatter"].success(f"Updated issue {issue_key}")
+    success(ctx, f"Updated issue {issue_key}")
 
 
 @issue_group.command("assign")
@@ -126,7 +125,7 @@ def issue_assign(ctx, issue_key, assignee):
     """Assign an issue."""
     client = _get_client(ctx)
     client.assign_issue(issue_key, assignee)
-    ctx.obj["formatter"].success(f"Assigned {issue_key} to {assignee}")
+    success(ctx, f"Assigned {issue_key} to {assignee}")
 
 
 @issue_group.command("transition")
@@ -142,7 +141,7 @@ def issue_transition(ctx, issue_key, status, list_transitions, comment):
 
     if list_transitions or not status:
         normalized = [normalize_transition(t) for t in transitions]
-        ctx.obj["formatter"].output(normalized)
+        output(ctx, normalized)
         return
 
     # Find transition by name (case-insensitive)
@@ -157,14 +156,14 @@ def issue_transition(ctx, issue_key, status, list_transitions, comment):
 
     if not match:
         available = ", ".join(t["name"] for t in transitions)
-        ctx.obj["formatter"].error(
-            AgentixError(f"No transition matching '{status}'. Available: {available}")
+        error_exit(
+            ctx,
+            AgentixError(f"No transition matching '{status}'. Available: {available}"),
         )
-        ctx.exit(3)
         return
 
     client.transition_issue(issue_key, match["id"], comment=comment)
-    ctx.obj["formatter"].success(
+    success(ctx, 
         f"Transitioned {issue_key} via '{match['name']}'"
     )
 
@@ -179,4 +178,4 @@ def issue_delete(ctx, issue_key, yes):
         click.confirm(f"Delete issue {issue_key}?", abort=True)
     client = _get_client(ctx)
     client.delete_issue(issue_key)
-    ctx.obj["formatter"].success(f"Deleted issue {issue_key}")
+    success(ctx, f"Deleted issue {issue_key}")

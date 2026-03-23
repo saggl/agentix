@@ -1,7 +1,7 @@
 """Comment commands for Jira."""
 
 from agentix.jira.models import normalize_comment
-from ._common import _get_client, click
+from ._common import _get_client, click, output, success
 
 
 @click.group("comment")
@@ -17,7 +17,7 @@ def comment_list(ctx, issue_key):
     """List comments on an issue."""
     client = _get_client(ctx)
     comments = client.get_comments(issue_key)
-    ctx.obj["formatter"].output([normalize_comment(c) for c in comments])
+    output(ctx, [normalize_comment(c) for c in comments])
 
 
 @comment_group.command("add")
@@ -28,7 +28,7 @@ def comment_add(ctx, issue_key, body):
     """Add a comment to an issue."""
     client = _get_client(ctx)
     result = client.add_comment(issue_key, body)
-    ctx.obj["formatter"].success(
+    success(ctx, 
         f"Added comment to {issue_key}",
         data={"id": result.get("id")},
     )
@@ -42,4 +42,4 @@ def comment_get(ctx, issue_key, comment_id):
     """Get a specific comment."""
     client = _get_client(ctx)
     comment = client.get_comment(issue_key, comment_id)
-    ctx.obj["formatter"].output(normalize_comment(comment))
+    output(ctx, normalize_comment(comment))
