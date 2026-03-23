@@ -1,0 +1,119 @@
+"""Build commands for Jenkins."""
+
+from agentix.jenkins.models import normalize_artifact, normalize_build, normalize_build_brief
+from ._common import _get_client, click
+
+
+@click.group("build")
+def build_group():
+    """Manage builds."""
+    pass
+
+
+@build_group.command("trigger")
+@click.argument("job_name")
+@click.option("--param", "-P", multiple=True, help="Build parameter (KEY=VALUE).")
+@click.option("--wait", is_flag=True, help="Wait for build to complete.")
+@click.option("--timeout", default=300, type=int, help="Wait timeout in seconds (default: 300).")
+@click.pass_context
+def build_trigger(ctx, job_name, param, wait, timeout):
+    """Trigger a build."""
+    client = _get_client(ctx)
+    params = {}
+    for p in param:
+        if "=" in p:
+            k, v = p.split("=", 1)
+            params[k] = v
+
+    queue_id = client.trigger_build(job_name, params=params or None)
+
+    if wait and queue_id:
+        ctx.obj["formatter"].success(
+            f"Build queued (queue ID: {queue_id}). Waiting...",
+        )
+        result = client.wait_for_build(job_name, queue_id, timeout=timeout)
+        ctx.obj["formatter"].output(normalize_build(result))
+    else:
+        ctx.obj["formatter"].success(
+            f"Build triggered for {job_name}",
+            data={"queue_id": queue_id},
+        )
+
+
+@build_group.command("status")
+@click.argument("job_name")
+@click.option("--build-number", "-n", type=int, help="Build number (default: latest).")
+@click.pass_context
+def build_status(ctx, job_name, build_number):
+    """Get build status."""
+    client = _get_client(ctx)
+    build = client.get_build(job_name, build_number)
+    ctx.obj["formatter"].output(normalize_build(build))
+
+
+@build_group.command("log")
+@click.argument("job_name")
+@click.option("--build-number", "-n", type=int, help="Build number (default: latest).")
+@click.option("--tail", "-t", type=int, help="Show last N lines.")
+@click.pass_context
+def build_log(ctx, job_name, build_number, tail):
+    """Get build console log."""
+    client = _get_client(ctx)
+    log = client.get_build_log(job_name, build_number, tail=tail)
+    print(log)
+
+
+@build_group.command("list")
+@click.argument("job_name")
+@click.option("--max-results", default=10, type=click.IntRange(1), help="Max results.")
+@click.pass_context
+def build_list(ctx, job_name, max_results):
+    """List recent builds."""
+    client = _get_client(ctx)
+    builds = client.get_builds(job_name, max_results=max_results)
+    ctx.obj["formatter"].output([normalize_build_brief(b) for b in builds])
+
+
+@build_group.command("abort")
+@click.argument("job_name")
+@click.argument("build_number", type=int)
+@click.pass_context
+def build_abort(ctx, job_name, build_number):
+    """Abort a running build."""
+    client = _get_client(ctx)
+    client.abort_build(job_name, build_number)
+    ctx.obj["formatter"].success(f"Aborted build #{build_number} of {job_name}")
+
+
+@build_group.command("artifacts")
+@click.argument("job_name")
+@click.option("--build-number", "-n", type=int, help="Build number (default: latest).")
+@click.pass_context
+def build_artifacts(ctx, job_name, build_number):
+    """List build artifacts."""
+    client = _get_client(ctx)
+    artifacts = client.get_build_artifacts(job_name, build_number=build_number)
+    ctx.obj["formatter"].output([normalize_artifact(a) for a in artifacts])
+
+
+@build_group.command("download")
+@click.argument("job_name")
+@click.option("--artifact", "-a", "artifact_path", required=True, help="Artifact relative path.")
+@click.option("--build-number", "-n", type=int, help="Build number (default: latest).")
+@click.option("--output", "-o", help="Output file path (default: stdout).")
+@click.pass_context
+def build_download(ctx, job_name, artifact_path, build_number, output):
+    """Download a build artifact."""
+    client = _get_client(ctx)
+
+    if output:
+        # Use streaming download for files to avoid loading into memory
+        client.download_artifact_to_file(
+            job_name, artifact_path, output, build_number=build_number
+        )
+        ctx.obj["formatter"].success(f"Downloaded to {output}")
+    else:
+        # For stdout, load into memory (typically for small files piped to other commands)
+        content = client.download_artifact(job_name, artifact_path, build_number=build_number)
+        import sys
+        sys.stdout.buffer.write(content)
