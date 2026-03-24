@@ -182,6 +182,70 @@ def test_jenkins_build_abort(runner, mock_jenkins_client):
     mock_jenkins_client.abort_build.assert_called_once_with("my-job", 123)
 
 
+def test_jenkins_build_wait_success(runner, mock_jenkins_client):
+    mock_jenkins_client.wait_for_build_result.return_value = {
+        "number": 123,
+        "result": "SUCCESS",
+        "building": False,
+    }
+
+    result = runner.invoke(cli, ["jenkins", "build", "wait", "my-job", "--timeout", "60"])
+    assert result.exit_code == 0
+    mock_jenkins_client.wait_for_build_result.assert_called_once_with(
+        "my-job", build_number=None, timeout=60
+    )
+
+
+def test_jenkins_build_wait_failure_sets_exit_1(runner, mock_jenkins_client):
+    mock_jenkins_client.wait_for_build_result.return_value = {
+        "number": 124,
+        "result": "FAILURE",
+        "building": False,
+    }
+
+    result = runner.invoke(cli, ["jenkins", "build", "wait", "my-job"])
+    assert result.exit_code == 1
+
+
+def test_jenkins_build_latest_failed(runner, mock_jenkins_client):
+    mock_jenkins_client.get_latest_build_by_result.return_value = {
+        "number": 200,
+        "result": "FAILURE",
+        "building": False,
+    }
+
+    result = runner.invoke(cli, ["jenkins", "build", "latest-failed", "my-job"])
+    assert result.exit_code == 0
+    mock_jenkins_client.get_latest_build_by_result.assert_called_once_with("my-job", "FAILURE")
+
+
+def test_jenkins_build_latest_success(runner, mock_jenkins_client):
+    mock_jenkins_client.get_latest_build_by_result.return_value = {
+        "number": 201,
+        "result": "SUCCESS",
+        "building": False,
+    }
+
+    result = runner.invoke(cli, ["jenkins", "build", "latest-success", "my-job"])
+    assert result.exit_code == 0
+    mock_jenkins_client.get_latest_build_by_result.assert_called_once_with("my-job", "SUCCESS")
+
+
+def test_jenkins_build_trigger_with_params_file_env(runner, mock_jenkins_client, tmp_path):
+    params_file = tmp_path / "params.env"
+    params_file.write_text("FOO=bar\nBAZ=qux\n")
+    mock_jenkins_client.trigger_build.return_value = 7
+
+    result = runner.invoke(
+        cli,
+        ["jenkins", "build", "trigger", "my-job", "--params-file", str(params_file)],
+    )
+    assert result.exit_code == 0
+    mock_jenkins_client.trigger_build.assert_called_once_with(
+        "my-job", params={"FOO": "bar", "BAZ": "qux"}
+    )
+
+
 def test_jenkins_build_artifacts(runner, mock_jenkins_client):
     mock_jenkins_client.get_build_artifacts.return_value = [
         {

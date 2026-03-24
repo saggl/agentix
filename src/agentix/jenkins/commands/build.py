@@ -1,5 +1,8 @@
 """Build commands for Jenkins."""
 
+import json
+from pathlib import Path
+
 from agentix.jenkins.models import normalize_artifact, normalize_build, normalize_build_brief
 from ._common import _get_client, click
 
@@ -10,20 +13,41 @@ def build_group():
     pass
 
 
-@build_group.command("trigger")
-@click.argument("job_name")
-@click.option("--param", "-P", multiple=True, help="Build parameter (KEY=VALUE).")
-@click.option("--wait", is_flag=True, help="Wait for build to complete.")
-@click.option("--timeout", default=300, type=int, help="Wait timeout in seconds (default: 300).")
-@click.pass_context
-def build_trigger(ctx, job_name, param, wait, timeout):
-    """Trigger a build."""
-    client = _get_client(ctx)
+def _parse_params(param, params_file):
     params = {}
     for p in param:
         if "=" in p:
             k, v = p.split("=", 1)
             params[k] = v
+
+    if params_file:
+        path = Path(params_file)
+        content = path.read_text(encoding="utf-8").strip()
+        if path.suffix.lower() == ".json":
+            data = json.loads(content) if content else {}
+            if isinstance(data, dict):
+                params.update({str(k): str(v) for k, v in data.items()})
+        else:
+            for line in content.splitlines():
+                line = line.strip()
+                if not line or line.startswith("#") or "=" not in line:
+                    continue
+                k, v = line.split("=", 1)
+                params[k.strip()] = v.strip()
+    return params
+
+
+@build_group.command("trigger")
+@click.argument("job_name")
+@click.option("--param", "-P", multiple=True, help="Build parameter (KEY=VALUE).")
+@click.option("--params-file", type=click.Path(exists=True), help="Load build parameters from .env or .json file.")
+@click.option("--wait", is_flag=True, help="Wait for build to complete.")
+@click.option("--timeout", default=300, type=int, help="Wait timeout in seconds (default: 300).")
+@click.pass_context
+def build_trigger(ctx, job_name, param, params_file, wait, timeout):
+    """Trigger a build."""
+    client = _get_client(ctx)
+    params = _parse_params(param, params_file)
 
     queue_id = client.trigger_build(job_name, params=params or None)
 
@@ -83,6 +107,49 @@ def build_abort(ctx, job_name, build_number):
     client = _get_client(ctx)
     client.abort_build(job_name, build_number)
     ctx.obj["formatter"].success(f"Aborted build #{build_number} of {job_name}")
+
+
+@build_group.command("wait")
+@click.argument("job_name")
+@click.option("--build-number", "-n", type=int, help="Build number (default: latest).")
+@click.option("--timeout", default=300, type=int, help="Wait timeout in seconds (default: 300).")
+@click.pass_context
+def build_wait(ctx, job_name, build_number, timeout):
+    """Wait for a build to complete."""
+    client = _get_client(ctx)
+    build = client.wait_for_build_result(job_name, build_number=build_number, timeout=timeout)
+    normalized = normalize_build(build)
+    ctx.obj["formatter"].output(normalized)
+
+    result = (build.get("result") or "").upper()
+    if result and result not in {"SUCCESS"}:
+        ctx.exit(1)
+
+
+@build_group.command("latest-failed")
+@click.argument("job_name")
+@click.pass_context
+def build_latest_failed(ctx, job_name):
+    """Get latest failed build."""
+    client = _get_client(ctx)
+    build = client.get_latest_build_by_result(job_name, "FAILURE")
+    if not build:
+        ctx.obj["formatter"].output({"message": "No failed build found."})
+        return
+    ctx.obj["formatter"].output(normalize_build(build))
+
+
+@build_group.command("latest-success")
+@click.argument("job_name")
+@click.pass_context
+def build_latest_success(ctx, job_name):
+    """Get latest successful build."""
+    client = _get_client(ctx)
+    build = client.get_latest_build_by_result(job_name, "SUCCESS")
+    if not build:
+        ctx.obj["formatter"].output({"message": "No successful build found."})
+        return
+    ctx.obj["formatter"].output(normalize_build(build))
 
 
 @build_group.command("artifacts")
