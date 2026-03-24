@@ -39,7 +39,12 @@ jobs:
       - name: Type check
         run: uv run --with mypy mypy src/agentix/config/models.py src/agentix/config/manager.py src/agentix/core/update.py
 
+      - name: Test (coverage gate)
+        if: matrix.os == 'ubuntu-latest' && matrix.python-version == '3.12'
+        run: uv run pytest tests/ -v --tb=short --cov=src/agentix --cov-fail-under=78
+
       - name: Test
+        if: matrix.os != 'ubuntu-latest' || matrix.python-version != '3.12'
         run: uv run pytest tests/ -v --tb=short
 
   cli-smoke:
