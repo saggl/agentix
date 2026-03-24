@@ -242,15 +242,38 @@ class JenkinsMethods:
         return self.http.get(path)
 
     def get_test_failures(
-        self, job_name: str, build_number: Optional[int] = None
+        self,
+        job_name: str,
+        build_number: Optional[int] = None,
+        suite_filter: Optional[str] = None,
+        limit: Optional[int] = None,
     ) -> List[Dict[str, Any]]:
         results = self.get_test_results(job_name, build_number)
         failures = []
         for suite in results.get("suites", []):
+            if suite_filter and suite_filter.lower() not in str(suite.get("name", "")).lower():
+                continue
             for case in suite.get("cases", []):
                 if case.get("status") in ("FAILED", "REGRESSION"):
                     failures.append(case)
+                    if limit and len(failures) >= limit:
+                        return failures
         return failures
+
+    def get_build_changes(
+        self, job_name: str, build_number: Optional[int] = None
+    ) -> List[Dict[str, Any]]:
+        """Get changelog entries for a build."""
+        if build_number:
+            path = f"{self._job_path(job_name)}/{build_number}/api/json"
+        else:
+            path = f"{self._job_path(job_name)}/lastBuild/api/json"
+
+        data = self.http.get(path, params={"tree": "changeSets[items[commitId,msg,author[fullName],affectedPaths]]"})
+        entries: List[Dict[str, Any]] = []
+        for cs in data.get("changeSets", []):
+            entries.extend(cs.get("items", []))
+        return entries
 
     # -- Pipeline --
 

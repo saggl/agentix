@@ -299,12 +299,16 @@ def test_jenkins_build_failure_summary(runner, mock_jenkins_client):
     ]
     mock_jenkins_client.get_stage_log.return_value = "err1\nerr2"
     mock_jenkins_client.get_test_results.return_value = {"totalCount": 10, "failCount": 2, "skipCount": 1}
+    mock_jenkins_client.get_build_changes.return_value = [
+        {"commitId": "abc", "msg": "fix", "author": {"fullName": "alice"}, "affectedPaths": ["x"]}
+    ]
 
     result = runner.invoke(cli, ["jenkins", "build", "failure-summary", "my-job"])
     assert result.exit_code == 0
     data = json.loads(result.output)
     assert data["result"] == "FAILURE"
     assert data["tests"]["failed"] == 2
+    assert data["changes"][0]["id"] == "abc"
 
 
 def test_jenkins_build_debug_latest_failed(runner, mock_jenkins_client):
@@ -319,12 +323,27 @@ def test_jenkins_build_debug_latest_failed(runner, mock_jenkins_client):
     ]
     mock_jenkins_client.get_stage_log.return_value = "line1\nline2"
     mock_jenkins_client.get_test_failures.return_value = [{"name": "test_a", "status": "FAILED"}]
+    mock_jenkins_client.get_build_changes.return_value = [
+        {"commitId": "abc", "msg": "fix", "author": {"fullName": "alice"}, "affectedPaths": ["x"]}
+    ]
 
     result = runner.invoke(cli, ["jenkins", "build", "debug", "my-job", "--latest-failed"])
     assert result.exit_code == 0
     data = json.loads(result.output)
     assert data["build"]["number"] == 55
     assert len(data["stage_logs"]) == 1
+    assert data["changes"][0]["id"] == "abc"
+
+
+def test_jenkins_build_changes(runner, mock_jenkins_client):
+    mock_jenkins_client.get_build_changes.return_value = [
+        {"commitId": "abc", "msg": "fix", "author": {"fullName": "alice"}, "affectedPaths": ["x"]}
+    ]
+
+    result = runner.invoke(cli, ["jenkins", "build", "changes", "my-job"])
+    assert result.exit_code == 0
+    data = json.loads(result.output)
+    assert data[0]["id"] == "abc"
 
 
 def test_jenkins_build_artifacts(runner, mock_jenkins_client):
@@ -462,6 +481,63 @@ def test_jenkins_node_get(runner, mock_jenkins_client):
     # Node get normalizes to use "name" instead of "displayName"
     data = json.loads(result.output)
     assert data.get("name") == "agent-1"
+
+
+def test_jenkins_test_failures_filters_and_limit(runner, mock_jenkins_client):
+    mock_jenkins_client.get_test_failures.return_value = [
+        {
+            "name": "test_foo",
+            "className": "SuiteA",
+            "status": "FAILED",
+            "duration": 1.0,
+            "errorDetails": "x",
+            "errorStackTrace": "trace",
+        }
+    ]
+
+    result = runner.invoke(
+        cli,
+        [
+            "jenkins",
+            "test",
+            "failures",
+            "my-job",
+            "--suite",
+            "SuiteA",
+            "--limit",
+            "5",
+        ],
+    )
+    assert result.exit_code == 0
+    mock_jenkins_client.get_test_failures.assert_called_once_with(
+        "my-job",
+        None,
+        suite_filter="SuiteA",
+        limit=5,
+    )
+    data = json.loads(result.output)
+    assert "errorStackTrace" not in data[0]
+
+
+def test_jenkins_test_failures_include_stacktrace(runner, mock_jenkins_client):
+    mock_jenkins_client.get_test_failures.return_value = [
+        {
+            "name": "test_foo",
+            "className": "SuiteA",
+            "status": "FAILED",
+            "duration": 1.0,
+            "errorDetails": "x",
+            "errorStackTrace": "trace",
+        }
+    ]
+
+    result = runner.invoke(
+        cli,
+        ["jenkins", "test", "failures", "my-job", "--include-stacktrace"],
+    )
+    assert result.exit_code == 0
+    data = json.loads(result.output)
+    assert data[0]["errorStackTrace"] == "trace"
 
 
 def test_jenkins_table_format(runner, mock_jenkins_client):
