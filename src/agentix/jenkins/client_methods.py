@@ -106,6 +106,39 @@ class JenkinsMethods:
             f"{self._job_path(job_name)}/{build_number}/stop"
         )
 
+    def get_latest_build_by_result(self, job_name: str, result: str) -> Optional[Dict[str, Any]]:
+        """Get latest build matching a result (e.g. SUCCESS/FAILURE)."""
+        job = self.get_job(job_name)
+        key = {
+            "SUCCESS": "lastSuccessfulBuild",
+            "FAILURE": "lastFailedBuild",
+        }.get(result.upper())
+        if not key:
+            return None
+
+        ref = job.get(key) or {}
+        number = ref.get("number")
+        if number is None:
+            return None
+        return self.get_build(job_name, int(number))
+
+    def wait_for_build_result(
+        self,
+        job_name: str,
+        build_number: Optional[int] = None,
+        timeout: int = 300,
+        poll_interval: int = 5,
+    ) -> Dict[str, Any]:
+        """Wait for an existing build to reach terminal state."""
+        start = time.time()
+        while time.time() - start < timeout:
+            build = self.get_build(job_name, build_number)
+            if not build.get("building", False):
+                return build
+            time.sleep(poll_interval)
+
+        return self.get_build(job_name, build_number)
+
     def wait_for_build(
         self,
         job_name: str,
