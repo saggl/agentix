@@ -10,6 +10,7 @@ from agentix.config.models import (
     ConfluenceConfig,
     JenkinsConfig,
     JiraConfig,
+    PolarionConfig,
 )
 from agentix.core.exceptions import ConfigError
 
@@ -41,6 +42,10 @@ def init(ctx):
     # Jenkins
     if click.confirm("Configure Jenkins?", default=False):
         profile.jenkins = _setup_jenkins()
+
+    # Polarion
+    if click.confirm("Configure Polarion?", default=False):
+        profile.polarion = _setup_polarion()
 
     config.default_profile = profile_name
     config.profiles[profile_name] = profile
@@ -121,6 +126,38 @@ def _setup_jenkins() -> JenkinsConfig:
 
     return JenkinsConfig(
         base_url=base_url.rstrip("/"), username=username, api_token=api_token
+    )
+
+
+def _setup_polarion() -> PolarionConfig:
+    base_url = click.prompt("Polarion base URL (e.g., https://polarion.company.com/polarion)")
+    username = click.prompt("Polarion username")
+    auth_type = click.prompt(
+        "Auth type",
+        type=click.Choice(["token", "password"]),
+        default="token",
+    )
+    if auth_type == "token":
+        api_token = click.prompt("Polarion personal access token", hide_input=True)
+    else:
+        api_token = click.prompt("Polarion password", hide_input=True)
+
+    # Validate
+    click.echo("Validating credentials... ", nl=False)
+    try:
+        from polarion import Polarion
+        kwargs = {"token": api_token} if auth_type == "token" else {"password": api_token}
+        client = Polarion(base_url.rstrip("/"), username, **kwargs)
+        client.close()
+        click.echo("OK")
+    except Exception as e:
+        click.echo(f"Warning: could not validate — {e}")
+
+    return PolarionConfig(
+        base_url=base_url.rstrip("/"),
+        username=username,
+        api_token=api_token,
+        auth_type=auth_type,
     )
 
 

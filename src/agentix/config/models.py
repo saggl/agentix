@@ -40,11 +40,20 @@ class BitbucketConfig:
 
 
 @dataclass
+class PolarionConfig:
+    base_url: str = ""
+    username: str = ""
+    api_token: str = ""
+    auth_type: str = "token"  # "token" or "password"
+
+
+@dataclass
 class Profile:
     jira: JiraConfig = field(default_factory=JiraConfig)
     confluence: ConfluenceConfig = field(default_factory=ConfluenceConfig)
     jenkins: JenkinsConfig = field(default_factory=JenkinsConfig)
     bitbucket: BitbucketConfig = field(default_factory=BitbucketConfig)
+    polarion: PolarionConfig = field(default_factory=PolarionConfig)
 
     @classmethod
     def from_dict(cls, data: Dict[str, Any]) -> "Profile":
@@ -53,11 +62,12 @@ class Profile:
             confluence=ConfluenceConfig(**data.get("confluence", {})),
             jenkins=JenkinsConfig(**data.get("jenkins", {})),
             bitbucket=BitbucketConfig(**data.get("bitbucket", {})),
+            polarion=PolarionConfig(**data.get("polarion", {})),
         )
 
     def to_dict(self) -> Dict[str, Any]:
         result = {}
-        for service_name in ("jira", "confluence", "jenkins", "bitbucket"):
+        for service_name in ("jira", "confluence", "jenkins", "bitbucket", "polarion"):
             cfg = getattr(self, service_name)
             d = {k: v for k, v in cfg.__dict__.items() if v}
             if d:

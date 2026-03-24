@@ -16,6 +16,7 @@ from agentix.bitbucket.commands import bitbucket_group
 from agentix.confluence.commands import confluence_group
 from agentix.jenkins.commands import jenkins_group
 from agentix.jira.commands import jira_group
+from agentix.polarion.commands import polarion_group
 
 # Handle different Click versions - NoArgsIsHelpError was added in Click 8.2.0
 NoArgsIsHelpError = getattr(click.exceptions, "NoArgsIsHelpError", None)
@@ -39,7 +40,7 @@ NoArgsIsHelpError = getattr(click.exceptions, "NoArgsIsHelpError", None)
 @click.version_option(version=__version__, prog_name="agentix")
 @click.pass_context
 def cli(ctx, profile, output_format, verbose):
-    """agentix — Unified CLI for Jira, Confluence, Jenkins, and Bitbucket."""
+    """agentix — Unified CLI for Jira, Confluence, Jenkins, Bitbucket, and Polarion."""
     ctx.ensure_object(dict)
 
     if verbose:
@@ -63,6 +64,7 @@ cli.add_command(jira_group)
 cli.add_command(confluence_group)
 cli.add_command(jenkins_group)
 cli.add_command(bitbucket_group)
+cli.add_command(polarion_group)
 cli.add_command(schema_command)
 cli.add_command(update_command)
 
