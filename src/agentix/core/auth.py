@@ -2,7 +2,7 @@
 
 import os
 from dataclasses import dataclass
-from typing import Optional
+from typing import Optional, cast
 
 from .exceptions import AuthenticationError
 
@@ -63,7 +63,7 @@ def resolve_auth(
         or os.environ.get(f"{env_prefix}_API_TOKEN")
         or getattr(service_config, token_attr, "")
     )
-    resolved_auth_type = (
+    resolved_auth_type = str(
         os.environ.get(f"{env_prefix}_AUTH_TYPE")
         or getattr(service_config, "auth_type", "basic")
     )
@@ -86,8 +86,8 @@ def resolve_auth(
         )
 
     return ServiceAuth(
-        base_url=resolved_url,
-        user=resolved_user,
-        token=resolved_token,
+        base_url=cast(str, resolved_url),
+        user=cast(str, resolved_user),
+        token=cast(str, resolved_token),
         auth_type=resolved_auth_type,
     )

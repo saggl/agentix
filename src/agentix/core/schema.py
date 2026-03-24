@@ -104,7 +104,7 @@ def find_command_by_path(
     Returns:
         The found command, or None if not found
     """
-    current = root_command
+    current: Optional[click.Command] = root_command
 
     for component in path:
         if not isinstance(current, click.Group):
