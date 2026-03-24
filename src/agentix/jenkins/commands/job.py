@@ -37,7 +37,7 @@ def job_config(ctx, job_name):
     """Get job configuration XML."""
     client = _get_client(ctx)
     xml = client.get_job_config(job_name)
-    print(xml)
+    click.echo(xml)
 
 
 @job_group.command("enable")

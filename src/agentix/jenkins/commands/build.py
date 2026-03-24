@@ -60,7 +60,7 @@ def build_log(ctx, job_name, build_number, tail):
     """Get build console log."""
     client = _get_client(ctx)
     log = client.get_build_log(job_name, build_number, tail=tail)
-    print(log)
+    click.echo(log)
 
 
 @build_group.command("list")
