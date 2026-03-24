@@ -12,7 +12,7 @@ agentix provides a consistent, JSON-first interface to Atlassian and Jenkins API
 - 🔐 **Modern Authentication**: Bearer token and API token support
 - 📋 **Human-Friendly**: Optional table output format for terminal use
 - ⚙️ **Multi-Profile**: Manage multiple environments (dev, staging, prod)
-- 🧪 **Well-Tested**: Comprehensive test suite with 290+ tests
+- 🧪 **Well-Tested**: Comprehensive test suite with 300+ tests
 
 ## Installation
 
@@ -116,18 +116,33 @@ agentix jenkins job get my-pipeline
 # Trigger a build
 agentix jenkins build trigger my-pipeline
 
-# Build with parameters
+# Build with inline parameters
 agentix jenkins build trigger my-pipeline \
   -P ENVIRONMENT=staging \
   -P VERSION=1.2.3
 
-# Wait for build to complete
-agentix jenkins build trigger my-pipeline --wait --timeout 600
+# Build with params file (.env or .json)
+agentix jenkins build trigger my-pipeline --params-file ./params.env
 
-# Get build status
+# Wait for build completion
+agentix jenkins build wait my-pipeline --timeout 600
+
+# Get latest failed or latest successful build
+agentix jenkins build latest-failed my-pipeline
+agentix jenkins build latest-success my-pipeline
+
+# Failure-first debugging
+agentix jenkins build failed-stage my-pipeline
+agentix jenkins build failed-log my-pipeline --tail 80
+agentix jenkins build failure-summary my-pipeline
+agentix jenkins build debug my-pipeline --latest-failed
+
+# Build change context + test failure filtering
+agentix jenkins build changes my-pipeline
+agentix jenkins test failures my-pipeline --suite smoke --limit 10
+
+# Get build status/logs
 agentix jenkins build status my-pipeline
-
-# Get build logs
 agentix jenkins build log my-pipeline --tail 50
 ```
 
@@ -273,6 +288,12 @@ This makes agentix ideal for:
 - JSON output fields may expand, but existing keys should remain backward-compatible.
 - Use `agentix schema` to discover capabilities dynamically instead of hardcoding assumptions.
 
+For Jenkins debugging workflows, prefer these stable high-level payloads:
+- `jenkins build failure-summary`
+- `jenkins build debug`
+
+Expected top-level fields include: `job`, `build/build_number`, `result`, `failed_stages`, `tests`, and optional `changes`.
+
 ### Local Development
 
 When developing locally, run commands via `uv`:
@@ -318,7 +339,7 @@ agentix/
 │   ├── confluence/      # Confluence integration
 │   ├── jenkins/         # Jenkins integration
 │   └── bitbucket/       # Bitbucket integration
-├── tests/               # Test suite (290+ tests)
+├── tests/               # Test suite (300+ tests)
 ├── CLAUDE.md           # Development guidelines
 └── pyproject.toml      # Package configuration
 ```
