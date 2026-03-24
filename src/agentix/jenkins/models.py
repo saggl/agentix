@@ -107,3 +107,14 @@ def normalize_artifact(artifact: Dict[str, Any]) -> Dict[str, Any]:
         "displayPath": artifact.get("displayPath", ""),
         "relativePath": artifact.get("relativePath", ""),
     }
+
+
+def normalize_change(change: Dict[str, Any]) -> Dict[str, Any]:
+    """Normalize a Jenkins build changelog entry."""
+    author = change.get("author", {})
+    return {
+        "id": change.get("commitId", ""),
+        "author": author.get("fullName", ""),
+        "message": change.get("msg", ""),
+        "affectedPaths": change.get("affectedPaths", []),
+    }

@@ -8,6 +8,7 @@ from agentix.jenkins.models import (
     normalize_artifact,
     normalize_build,
     normalize_build_brief,
+    normalize_change,
     normalize_stage,
 )
 from ._common import _get_client, click
@@ -242,6 +243,8 @@ def build_failure_summary(ctx, job_name, build_number):
     except AgentixError:
         pass
 
+    changes = [normalize_change(c) for c in client.get_build_changes(job_name, build_number)]
+
     summary = {
         "job": job_name,
         "build_number": build.get("number"),
@@ -250,6 +253,7 @@ def build_failure_summary(ctx, job_name, build_number):
         "failed_stages": [normalize_stage(s) for s in failed],
         "errors": errors,
         "tests": tests,
+        "changes": changes,
     }
     ctx.obj["formatter"].output(summary)
 
@@ -290,6 +294,8 @@ def build_debug(ctx, job_name, build_number, latest_failed, tail):
     except AgentixError:
         pass
 
+    changes = [normalize_change(c) for c in client.get_build_changes(job_name, build_number)]
+
     ctx.obj["formatter"].output(
         {
             "job": job_name,
@@ -297,8 +303,20 @@ def build_debug(ctx, job_name, build_number, latest_failed, tail):
             "failed_stages": [normalize_stage(s) for s in failed],
             "stage_logs": stage_logs,
             "test_failures": failures,
+            "changes": changes,
         }
     )
+
+
+@build_group.command("changes")
+@click.argument("job_name")
+@click.option("--build-number", "-n", type=int, help="Build number (default: latest).")
+@click.pass_context
+def build_changes(ctx, job_name, build_number):
+    """List changelog entries for a build."""
+    client = _get_client(ctx)
+    changes = client.get_build_changes(job_name, build_number)
+    ctx.obj["formatter"].output([normalize_change(c) for c in changes])
 
 
 @build_group.command("artifacts")
