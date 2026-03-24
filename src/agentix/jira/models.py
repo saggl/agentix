@@ -146,12 +146,12 @@ def _nested_name(fields: Dict, key: str) -> str:
 def _nested_display(fields: Dict, key: str) -> str:
     val = fields.get(key)
     if isinstance(val, dict):
-        return val.get("displayName", val.get("name", ""))
+        return str(val.get("displayName") or val.get("name") or "")
     return str(val) if val else ""
 
 
 def _nested_display_direct(data: Dict, key: str) -> str:
     val = data.get(key)
     if isinstance(val, dict):
-        return val.get("displayName", val.get("name", ""))
+        return str(val.get("displayName") or val.get("name") or "")
     return str(val) if val else ""
