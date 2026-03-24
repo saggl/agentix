@@ -246,6 +246,48 @@ def test_jenkins_build_trigger_with_params_file_env(runner, mock_jenkins_client,
     )
 
 
+def test_jenkins_build_failed_stage(runner, mock_jenkins_client):
+    mock_jenkins_client.get_pipeline_stages.return_value = [
+        {"id": "1", "name": "Build", "status": "SUCCESS", "durationMillis": 1000},
+        {"id": "2", "name": "Test", "status": "FAILED", "durationMillis": 2000},
+    ]
+
+    result = runner.invoke(cli, ["jenkins", "build", "failed-stage", "my-job"])
+    assert result.exit_code == 0
+    data = json.loads(result.output)
+    assert len(data) == 1
+    assert data[0]["name"] == "Test"
+
+
+def test_jenkins_build_failed_log_auto_failed_stages(runner, mock_jenkins_client):
+    mock_jenkins_client.get_pipeline_stages.return_value = [
+        {"id": "2", "name": "Test", "status": "FAILED", "durationMillis": 2000},
+    ]
+    mock_jenkins_client.get_stage_log.return_value = "line1\nline2\nline3"
+
+    result = runner.invoke(cli, ["jenkins", "build", "failed-log", "my-job", "--tail", "2"])
+    assert result.exit_code == 0
+    data = json.loads(result.output)
+    assert data[0]["stage"]["name"] == "Test"
+    assert data[0]["log"] == "line2\nline3"
+
+
+def test_jenkins_build_failed_log_specific_stage(runner, mock_jenkins_client):
+    mock_jenkins_client.get_pipeline_stages.return_value = [
+        {"id": "1", "name": "Build", "status": "SUCCESS", "durationMillis": 1000},
+    ]
+    mock_jenkins_client.get_stage_log.return_value = "ok"
+
+    result = runner.invoke(
+        cli,
+        ["jenkins", "build", "failed-log", "my-job", "--stage", "Build"],
+    )
+    assert result.exit_code == 0
+    data = json.loads(result.output)
+    assert len(data) == 1
+    assert data[0]["log"] == "ok"
+
+
 def test_jenkins_build_artifacts(runner, mock_jenkins_client):
     mock_jenkins_client.get_build_artifacts.return_value = [
         {

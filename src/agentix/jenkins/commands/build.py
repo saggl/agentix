@@ -3,7 +3,12 @@
 import json
 from pathlib import Path
 
-from agentix.jenkins.models import normalize_artifact, normalize_build, normalize_build_brief
+from agentix.jenkins.models import (
+    normalize_artifact,
+    normalize_build,
+    normalize_build_brief,
+    normalize_stage,
+)
 from ._common import _get_client, click
 
 
@@ -150,6 +155,55 @@ def build_latest_success(ctx, job_name):
         ctx.obj["formatter"].output({"message": "No successful build found."})
         return
     ctx.obj["formatter"].output(normalize_build(build))
+
+
+@build_group.command("failed-stage")
+@click.argument("job_name")
+@click.option("--build-number", "-n", type=int, help="Build number (default: latest).")
+@click.pass_context
+def build_failed_stage(ctx, job_name, build_number):
+    """List failed pipeline stages for a build."""
+    client = _get_client(ctx)
+    stages = client.get_pipeline_stages(job_name, build_number)
+    failed = [s for s in stages if str(s.get("status", "")).upper() in {"FAILED", "FAILURE", "ABORTED"}]
+    ctx.obj["formatter"].output([normalize_stage(s) for s in failed])
+
+
+@build_group.command("failed-log")
+@click.argument("job_name")
+@click.option("--build-number", "-n", type=int, help="Build number (default: latest).")
+@click.option("--stage", "stage_ref", help="Stage id or name.")
+@click.option("--tail", "-t", type=int, help="Show last N lines from stage log.")
+@click.pass_context
+def build_failed_log(ctx, job_name, build_number, stage_ref, tail):
+    """Get logs from failed pipeline stage(s)."""
+    client = _get_client(ctx)
+    stages = client.get_pipeline_stages(job_name, build_number)
+
+    selected = []
+    if stage_ref:
+        for s in stages:
+            if str(s.get("id")) == stage_ref or str(s.get("name", "")).lower() == stage_ref.lower():
+                selected = [s]
+                break
+    else:
+        selected = [s for s in stages if str(s.get("status", "")).upper() in {"FAILED", "FAILURE", "ABORTED"}]
+
+    logs = []
+    for s in selected:
+        sid = str(s.get("id", ""))
+        if not sid:
+            continue
+        text = client.get_stage_log(job_name, sid, build_number)
+        if tail:
+            lines = text.splitlines()
+            text = "\n".join(lines[-tail:])
+        logs.append({
+            "stage": normalize_stage(s),
+            "log": text,
+        })
+
+    ctx.obj["formatter"].output(logs)
 
 
 @build_group.command("artifacts")
