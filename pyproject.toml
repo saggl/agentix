@@ -69,3 +69,12 @@ warn_redundant_casts = true
 warn_unused_ignores = true
 show_error_codes = true
 pretty = true
+
+[[tool.mypy.overrides]]
+module = [
+    "agentix.jira.client_methods",
+    "agentix.jenkins.client_methods",
+    "agentix.confluence.client_methods",
+    "agentix.bitbucket.client_methods",
+]
+disable_error_code = ["attr-defined"]

@@ -5,13 +5,6 @@ import sys
 
 import click
 
-# Handle different Click versions - NoArgsIsHelpError was added in Click 8.2.0
-try:
-    from click.exceptions import NoArgsIsHelpError
-except ImportError:
-    # Older versions of Click don't have this exception
-    NoArgsIsHelpError = None  # type: ignore
-
 from agentix import __version__
 from agentix.commands.schema import schema_command
 from agentix.commands.update import update_command
@@ -23,6 +16,9 @@ from agentix.bitbucket.commands import bitbucket_group
 from agentix.confluence.commands import confluence_group
 from agentix.jenkins.commands import jenkins_group
 from agentix.jira.commands import jira_group
+
+# Handle different Click versions - NoArgsIsHelpError was added in Click 8.2.0
+NoArgsIsHelpError = getattr(click.exceptions, "NoArgsIsHelpError", None)
 
 
 @click.group()

@@ -37,7 +37,7 @@ jobs:
         run: uv run ruff check src/ tests/
 
       - name: Type check
-        run: uv run --with mypy mypy src/agentix/core src/agentix/config
+        run: uv run --with mypy mypy src/agentix
 
       - name: Test (coverage gate)
         if: matrix.os == 'ubuntu-latest' && matrix.python-version == '3.12'
