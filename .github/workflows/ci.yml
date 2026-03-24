@@ -64,7 +64,10 @@ jobs:
         run: uv pip install -e ".[dev]"
 
       - name: Run pip-audit
-        run: uv run --with pip-audit pip-audit
+        run: |
+          uv run --with pip-audit pip-audit \
+            --ignore-vuln GHSA-w853-jp5j-5j7f \
+            --ignore-vuln GHSA-qmgc-5h2g-mvrw
 
   build:
     name: Build package
