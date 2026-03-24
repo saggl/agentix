@@ -30,4 +30,4 @@ def pipeline_log(ctx, job_name, stage, build_number):
     """Get log for a pipeline stage."""
     client = _get_client(ctx)
     log = client.get_stage_log(job_name, stage, build_number)
-    print(log)
+    click.echo(log)

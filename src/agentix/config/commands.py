@@ -152,9 +152,9 @@ def get(ctx, key):
         formatter.output(value)
     else:
         if formatter.fmt == "json":
-            print(json.dumps({"key": key, "value": value}))
+            click.echo(json.dumps({"key": key, "value": value}))
         else:
-            print(value)
+            click.echo(value)
 
 
 @config_group.command()
