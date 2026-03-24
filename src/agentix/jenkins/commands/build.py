@@ -3,6 +3,7 @@
 import json
 from pathlib import Path
 
+from agentix.core.exceptions import AgentixError
 from agentix.jenkins.models import (
     normalize_artifact,
     normalize_build,
@@ -169,6 +170,11 @@ def build_failed_stage(ctx, job_name, build_number):
     ctx.obj["formatter"].output([normalize_stage(s) for s in failed])
 
 
+def _failed_stages(client, job_name, build_number):
+    stages = client.get_pipeline_stages(job_name, build_number)
+    return [s for s in stages if str(s.get("status", "")).upper() in {"FAILED", "FAILURE", "ABORTED"}]
+
+
 @build_group.command("failed-log")
 @click.argument("job_name")
 @click.option("--build-number", "-n", type=int, help="Build number (default: latest).")
@@ -187,7 +193,7 @@ def build_failed_log(ctx, job_name, build_number, stage_ref, tail):
                 selected = [s]
                 break
     else:
-        selected = [s for s in stages if str(s.get("status", "")).upper() in {"FAILED", "FAILURE", "ABORTED"}]
+        selected = _failed_stages(client, job_name, build_number)
 
     logs = []
     for s in selected:
@@ -204,6 +210,95 @@ def build_failed_log(ctx, job_name, build_number, stage_ref, tail):
         })
 
     ctx.obj["formatter"].output(logs)
+
+
+@build_group.command("failure-summary")
+@click.argument("job_name")
+@click.option("--build-number", "-n", type=int, help="Build number (default: latest).")
+@click.pass_context
+def build_failure_summary(ctx, job_name, build_number):
+    """Summarize failing stages and tests for a build."""
+    client = _get_client(ctx)
+    build = client.get_build(job_name, build_number)
+    failed = _failed_stages(client, job_name, build_number)
+
+    errors = []
+    for s in failed:
+        sid = str(s.get("id", ""))
+        if not sid:
+            continue
+        log = client.get_stage_log(job_name, sid, build_number)
+        snippet = "\n".join(log.splitlines()[-10:])
+        errors.append({"stage": s.get("name", sid), "snippet": snippet})
+
+    tests = {"total": 0, "failed": 0, "skipped": 0}
+    try:
+        tr = client.get_test_results(job_name, build_number)
+        tests = {
+            "total": tr.get("totalCount", 0),
+            "failed": tr.get("failCount", 0),
+            "skipped": tr.get("skipCount", 0),
+        }
+    except AgentixError:
+        pass
+
+    summary = {
+        "job": job_name,
+        "build_number": build.get("number"),
+        "result": build.get("result"),
+        "url": build.get("url"),
+        "failed_stages": [normalize_stage(s) for s in failed],
+        "errors": errors,
+        "tests": tests,
+    }
+    ctx.obj["formatter"].output(summary)
+
+
+@build_group.command("debug")
+@click.argument("job_name")
+@click.option("--build-number", "-n", type=int, help="Build number (default: latest).")
+@click.option("--latest-failed", is_flag=True, help="Use latest failed build.")
+@click.option("--tail", "-t", type=int, default=50, help="Tail lines for failed stage logs.")
+@click.pass_context
+def build_debug(ctx, job_name, build_number, latest_failed, tail):
+    """Produce a debug bundle for a build failure."""
+    client = _get_client(ctx)
+
+    if latest_failed:
+        b = client.get_latest_build_by_result(job_name, "FAILURE")
+        if not b:
+            ctx.obj["formatter"].output({"message": "No failed build found."})
+            return
+        build_number = b.get("number")
+
+    build = client.get_build(job_name, build_number)
+    failed = _failed_stages(client, job_name, build_number)
+
+    stage_logs = []
+    for s in failed:
+        sid = str(s.get("id", ""))
+        if not sid:
+            continue
+        log = client.get_stage_log(job_name, sid, build_number)
+        if tail:
+            log = "\n".join(log.splitlines()[-tail:])
+        stage_logs.append({"stage": normalize_stage(s), "log": log})
+
+    failures = []
+    try:
+        failures = client.get_test_failures(job_name, build_number)
+    except AgentixError:
+        pass
+
+    ctx.obj["formatter"].output(
+        {
+            "job": job_name,
+            "build": normalize_build(build),
+            "failed_stages": [normalize_stage(s) for s in failed],
+            "stage_logs": stage_logs,
+            "test_failures": failures,
+        }
+    )
 
 
 @build_group.command("artifacts")
