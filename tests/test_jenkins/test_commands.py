@@ -288,6 +288,45 @@ def test_jenkins_build_failed_log_specific_stage(runner, mock_jenkins_client):
     assert data[0]["log"] == "ok"
 
 
+def test_jenkins_build_failure_summary(runner, mock_jenkins_client):
+    mock_jenkins_client.get_build.return_value = {
+        "number": 55,
+        "result": "FAILURE",
+        "url": "https://jenkins/job/my-job/55/",
+    }
+    mock_jenkins_client.get_pipeline_stages.return_value = [
+        {"id": "2", "name": "Test", "status": "FAILED", "durationMillis": 2000},
+    ]
+    mock_jenkins_client.get_stage_log.return_value = "err1\nerr2"
+    mock_jenkins_client.get_test_results.return_value = {"totalCount": 10, "failCount": 2, "skipCount": 1}
+
+    result = runner.invoke(cli, ["jenkins", "build", "failure-summary", "my-job"])
+    assert result.exit_code == 0
+    data = json.loads(result.output)
+    assert data["result"] == "FAILURE"
+    assert data["tests"]["failed"] == 2
+
+
+def test_jenkins_build_debug_latest_failed(runner, mock_jenkins_client):
+    mock_jenkins_client.get_latest_build_by_result.return_value = {"number": 55}
+    mock_jenkins_client.get_build.return_value = {
+        "number": 55,
+        "result": "FAILURE",
+        "building": False,
+    }
+    mock_jenkins_client.get_pipeline_stages.return_value = [
+        {"id": "2", "name": "Test", "status": "FAILED", "durationMillis": 2000},
+    ]
+    mock_jenkins_client.get_stage_log.return_value = "line1\nline2"
+    mock_jenkins_client.get_test_failures.return_value = [{"name": "test_a", "status": "FAILED"}]
+
+    result = runner.invoke(cli, ["jenkins", "build", "debug", "my-job", "--latest-failed"])
+    assert result.exit_code == 0
+    data = json.loads(result.output)
+    assert data["build"]["number"] == 55
+    assert len(data["stage_logs"]) == 1
+
+
 def test_jenkins_build_artifacts(runner, mock_jenkins_client):
     mock_jenkins_client.get_build_artifacts.return_value = [
         {
