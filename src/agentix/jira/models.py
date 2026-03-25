@@ -3,10 +3,18 @@
 from typing import Any, Dict
 
 
-def _extract_text(adf_body: Any) -> str:
-    """Extract plain text from Atlassian Document Format body."""
-    if not adf_body or not isinstance(adf_body, dict):
+def _extract_text(body: Any) -> str:
+    """Extract plain text from a Jira text field.
+
+    API v3 (Cloud) returns ADF dicts; API v2 (Server/DC) returns plain strings.
+    """
+    if not body:
         return ""
+    if isinstance(body, str):
+        return body
+    if not isinstance(body, dict):
+        return ""
+    adf_body = body
     parts = []
 
     def _walk(node: Any) -> None:

@@ -388,3 +388,78 @@ def test_table_output(runner, mock_jira_client):
     assert result.exit_code == 0
     assert "PROJ" in result.output
     assert "My Project" in result.output
+
+
+# -- _extract_text tests for v2 compatibility --
+
+
+def test_extract_text_plain_string():
+    from agentix.jira.models import _extract_text
+    assert _extract_text("plain text body") == "plain text body"
+
+
+def test_extract_text_adf():
+    from agentix.jira.models import _extract_text
+    adf = {
+        "type": "doc",
+        "version": 1,
+        "content": [
+            {"type": "paragraph", "content": [{"type": "text", "text": "hello world"}]}
+        ],
+    }
+    assert _extract_text(adf) == "hello world"
+
+
+def test_extract_text_none():
+    from agentix.jira.models import _extract_text
+    assert _extract_text(None) == ""
+
+
+def test_extract_text_empty_string():
+    from agentix.jira.models import _extract_text
+    assert _extract_text("") == ""
+
+
+# -- Issue get with v2 plain-text description --
+
+
+def test_jira_issue_get_plain_text_description(runner, mock_jira_client):
+    """API v2 returns description as a plain string."""
+    mock_jira_client.get_issue.return_value = {
+        "key": "PROJ-1",
+        "id": "10001",
+        "fields": {
+            "summary": "Server issue",
+            "status": {"name": "Open"},
+            "issuetype": {"name": "Bug"},
+            "priority": {"name": "High"},
+            "assignee": {"displayName": "Bob"},
+            "reporter": {"displayName": "Alice"},
+            "labels": [],
+            "created": "2024-01-01T00:00:00.000+0000",
+            "updated": "2024-01-02T00:00:00.000+0000",
+            "description": "This is a plain text description from API v2",
+        },
+    }
+
+    result = runner.invoke(cli, ["jira", "issue", "get", "PROJ-1"])
+    assert result.exit_code == 0
+    data = json.loads(result.output)
+    assert data["description"] == "This is a plain text description from API v2"
+
+
+# -- Metadata create 404 handling --
+
+
+def test_jira_metadata_create_not_found(runner, mock_jira_client):
+    """createmeta endpoint returns 404 on Jira Server/DC 9.x."""
+    from agentix.core.exceptions import NotFoundError
+    mock_jira_client.get_create_metadata.side_effect = NotFoundError("Not found")
+
+    result = runner.invoke(
+        cli, ["jira", "metadata", "create", "--project", "PROJ"]
+    )
+    assert result.exit_code != 0
+    data = json.loads(result.output)
+    assert data["error"] is True
+    assert "createmeta" in data["message"]

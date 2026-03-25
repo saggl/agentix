@@ -42,7 +42,8 @@ class JiraClient(JiraMethods):
             headers={"Content-Type": "application/json"},
             error_parser=_parse_jira_error,
         )
-        # Use API v2 for bearer auth (Jira Server/Data Center), v3 for basic (Jira Cloud)
-        self._api = "/rest/api/2" if auth_type == "bearer" else "/rest/api/3"
+        # Jira Cloud uses API v3 (ADF text fields), Server/DC uses API v2 (plain text)
+        self._is_cloud = auth_type != "bearer"
+        self._api = "/rest/api/3" if self._is_cloud else "/rest/api/2"
         self._agile = "/rest/agile/1.0"
 
