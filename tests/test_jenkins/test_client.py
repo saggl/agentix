@@ -378,3 +378,83 @@ def test_bearer_auth_initialization(jenkins_bearer):
     )
     jobs = jenkins_bearer.get_jobs()
     assert jobs == []
+
+
+# -- Bug fix tests --
+
+
+def test_get_node_built_in_variants(jenkins):
+    """All built-in node name variants map to (built-in)."""
+    from unittest.mock import patch
+
+    for name in ("master", "built-in", "Built-In Node"):
+        with patch.object(jenkins.http, "get", return_value={"displayName": name}) as mock_get:
+            jenkins.get_node(name)
+            called_path = mock_get.call_args[0][0]
+            assert "%28built-in%29" in called_path or "(built-in)" in called_path
+
+
+@responses.activate
+def test_get_stage_log_aggregates_child_nodes(jenkins):
+    """When parent stage log is empty, aggregate child flow node logs."""
+    # Parent stage log is empty
+    responses.add(
+        responses.GET,
+        "https://jenkins.example.com/job/my-pipeline/1/execution/node/6/wfapi/log",
+        json={"nodeId": "6", "nodeStatus": "FAILED", "length": 0, "hasMore": False},
+        status=200,
+    )
+    # Stage describe returns child flow nodes
+    responses.add(
+        responses.GET,
+        "https://jenkins.example.com/job/my-pipeline/1/execution/node/6/wfapi/describe",
+        json={
+            "id": "6",
+            "name": "Deploy",
+            "stageFlowNodes": [
+                {"id": "7", "name": "Print Message"},
+                {"id": "8", "name": "Shell Script"},
+            ],
+        },
+        status=200,
+    )
+    # Child node logs
+    responses.add(
+        responses.GET,
+        "https://jenkins.example.com/job/my-pipeline/1/execution/node/7/wfapi/log",
+        json={"text": "Deploying...\n"},
+        status=200,
+    )
+    responses.add(
+        responses.GET,
+        "https://jenkins.example.com/job/my-pipeline/1/execution/node/8/wfapi/log",
+        json={"text": "+ exit 1\n"},
+        status=200,
+    )
+
+    log = jenkins.get_stage_log("my-pipeline", "6", 1)
+    assert "Deploying..." in log
+    assert "exit 1" in log
+
+
+@responses.activate
+def test_get_stage_log_returns_direct_when_available(jenkins):
+    """When parent stage has log text, return it directly without child lookup."""
+    responses.add(
+        responses.GET,
+        "https://jenkins.example.com/job/my-pipeline/1/execution/node/6/wfapi/log",
+        json={"text": "Direct stage log\n"},
+        status=200,
+    )
+    log = jenkins.get_stage_log("my-pipeline", "6", 1)
+    assert log == "Direct stage log\n"
+    assert len(responses.calls) == 1  # No describe call needed
+
+
+def test_cancel_queue_item_uses_query_param(jenkins):
+    """Queue cancel sends id as query param, not form data."""
+    from unittest.mock import patch
+
+    with patch.object(jenkins, "_post_with_crumb") as mock_post:
+        jenkins.cancel_queue_item(42)
+        mock_post.assert_called_once_with("/queue/cancelItem?id=42")

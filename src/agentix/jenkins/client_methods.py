@@ -294,13 +294,34 @@ class JenkinsMethods:
         stage_id: str,
         build_number: Optional[int] = None,
     ) -> str:
-        """Get log for a specific pipeline stage."""
-        if build_number:
-            path = f"{self._job_path(job_name)}/{build_number}/execution/node/{stage_id}/wfapi/log"
-        else:
-            path = f"{self._job_path(job_name)}/lastBuild/execution/node/{stage_id}/wfapi/log"
-        data = self.http.get(path)
-        return data.get("text", "")
+        """Get log for a specific pipeline stage.
+
+        Stage parent nodes often have empty logs; the actual output lives in
+        child flow nodes.  When the parent log is empty we fetch the stage
+        description, iterate over ``stageFlowNodes``, and concatenate their
+        logs.
+        """
+        build = build_number or "lastBuild"
+        base = f"{self._job_path(job_name)}/{build}/execution/node/{stage_id}/wfapi"
+        data = self.http.get(f"{base}/log")
+        text = data.get("text", "")
+        if text:
+            return text
+
+        # Parent node log is empty – aggregate child flow-node logs
+        desc = self.http.get(f"{base}/describe")
+        parts: List[str] = []
+        for node in desc.get("stageFlowNodes", []):
+            node_id = node.get("id")
+            if not node_id:
+                continue
+            node_log = self.http.get(
+                f"{self._job_path(job_name)}/{build}/execution/node/{node_id}/wfapi/log"
+            )
+            node_text = node_log.get("text", "")
+            if node_text:
+                parts.append(node_text)
+        return "".join(parts)
 
     # -- Queue --
 
@@ -309,7 +330,7 @@ class JenkinsMethods:
         return data.get("items", [])
 
     def cancel_queue_item(self, queue_id: int) -> None:
-        self._post_with_crumb("/queue/cancelItem", data={"id": queue_id})
+        self._post_with_crumb(f"/queue/cancelItem?id={queue_id}")
 
     # -- Nodes --
 
@@ -321,5 +342,5 @@ class JenkinsMethods:
         return data.get("computer", [])
 
     def get_node(self, node_name: str) -> Dict[str, Any]:
-        name = "(built-in)" if node_name.lower() in ("master", "built-in") else node_name
+        name = "(built-in)" if node_name.lower() in ("master", "built-in", "built-in node") else node_name
         return self.http.get(f"/computer/{urlquote(name, safe='')}/api/json")
