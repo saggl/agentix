@@ -38,7 +38,7 @@ dependencies = [
     "tomli-w>=1.0",
     "tabulate>=0.9",
     "packaging>=21.0",
-    "polarion-api>=3.0.0",
+    "polarion-api>=3.0.3",
 ]
 
 [project.optional-dependencies]
