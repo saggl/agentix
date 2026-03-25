@@ -130,7 +130,6 @@ def normalize_user(user: Any) -> Dict[str, Any]:
     return {
         "id": user.id,
         "name": user.name,
-        "email": user.email,
     }
 
 
