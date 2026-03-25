@@ -13,7 +13,7 @@ dev = [
 [project]
 name = "agentix-cli"
 version = "0.4.0"
-description = "Unified CLI and SDK for Jira, Confluence, Jenkins, and Bitbucket"
+description = "Unified CLI and SDK for Jira, Confluence, Jenkins, Bitbucket, and Polarion"
 readme = "README.md"
 requires-python = ">=3.9"
 license = {text = "MIT"}
@@ -38,6 +38,7 @@ dependencies = [
     "tomli-w>=1.0",
     "tabulate>=0.9",
     "packaging>=21.0",
+    "polarion-api>=3.0.0",
 ]
 
 [project.optional-dependencies]
@@ -78,3 +79,7 @@ module = [
     "agentix.bitbucket.client_methods",
 ]
 disable_error_code = ["attr-defined"]
+
+[[tool.mypy.overrides]]
+module = ["polarion.*", "zeep.*"]
+ignore_missing_imports = true

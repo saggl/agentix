@@ -64,7 +64,7 @@ This project uses **Trusted Publishing** (OIDC-based, no API tokens needed):
   - Use `CliRunner` from `click.testing` to invoke commands
   - Test both success cases and error handling
   - Verify JSON output format matches expectations
-  - Mock external API calls (Jira, Confluence, Jenkins clients)
+  - Mock external API calls (Jira, Confluence, Jenkins, Polarion clients)
 
 ## Common Tasks
 
@@ -118,7 +118,8 @@ agentix/
 │   ├── jira/             # Jira integration
 │   ├── confluence/       # Confluence integration
 │   ├── jenkins/          # Jenkins integration
-│   └── bitbucket/        # Bitbucket integration
+│   ├── bitbucket/        # Bitbucket integration
+│   └── polarion/         # Polarion integration
 ├── tests/                # Test files
 ├── .github/workflows/    # CI/CD workflows
 ├── pyproject.toml        # Package configuration
