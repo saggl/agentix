@@ -1,6 +1,7 @@
 """Metadata commands for Jira."""
 
-from ._common import _get_client, click, output
+from agentix.core.exceptions import NotFoundError
+from ._common import _get_client, click, error_exit, output
 
 
 @click.group("metadata")
@@ -28,5 +29,17 @@ def metadata_create(ctx, project, issue_type):
     client = _get_client(ctx)
     project_keys = list(project) if project else None
     issue_types = list(issue_type) if issue_type else None
-    metadata = client.get_create_metadata(project_keys=project_keys, issue_type_names=issue_types)
+    try:
+        metadata = client.get_create_metadata(project_keys=project_keys, issue_type_names=issue_types)
+    except NotFoundError:
+        from agentix.core.exceptions import AgentixError
+        error_exit(
+            ctx,
+            AgentixError(
+                "The createmeta endpoint is not available on this Jira instance. "
+                "This endpoint was removed in Jira Server/DC 9.x. "
+                "Use 'agentix jira metadata edit <ISSUE_KEY>' instead."
+            ),
+        )
+        return
     output(ctx, metadata)

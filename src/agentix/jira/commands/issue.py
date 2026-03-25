@@ -95,17 +95,12 @@ def issue_create(ctx, project, summary, issue_type, description, assignee, prior
 @click.pass_context
 def issue_update(ctx, issue_key, summary, description, assignee, priority, labels):
     """Update an issue."""
+    client = _get_client(ctx)
     fields = {}
     if summary:
         fields["summary"] = summary
     if description:
-        fields["description"] = {
-            "type": "doc",
-            "version": 1,
-            "content": [
-                {"type": "paragraph", "content": [{"type": "text", "text": description}]}
-            ],
-        }
+        fields["description"] = client._text_field(description)
     if assignee:
         fields["assignee"] = {"accountId": assignee}
     if priority:
@@ -117,7 +112,6 @@ def issue_update(ctx, issue_key, summary, description, assignee, priority, label
         error_exit(ctx, AgentixError("No fields to update."))
         return
 
-    client = _get_client(ctx)
     client.update_issue(issue_key, fields)
     success(ctx, f"Updated issue {issue_key}")
 
