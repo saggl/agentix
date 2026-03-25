@@ -36,7 +36,7 @@ def init(ctx):
 
     # Confluence
     if click.confirm("Configure Confluence?", default=True):
-        profile.confluence = _setup_confluence(profile.jira)
+        profile.confluence = _setup_confluence()
 
     # Jenkins
     if click.confirm("Configure Jenkins?", default=False):
@@ -50,52 +50,99 @@ def init(ctx):
     formatter.success(f"Configuration saved to {cm.config_path}")
 
 
+def _is_jira_cloud(base_url: str) -> bool:
+    return ".atlassian.net" in base_url.lower()
+
+
 def _setup_jira() -> JiraConfig:
     base_url = click.prompt("Jira base URL (e.g., https://company.atlassian.net)")
-    email = click.prompt("Jira email")
-    api_token = click.prompt("Jira API token", hide_input=True)
+    base_url = base_url.rstrip("/")
+    is_cloud = _is_jira_cloud(base_url)
+
+    if is_cloud:
+        email = click.prompt("Jira email")
+        api_token = click.prompt("Jira API token", hide_input=True)
+        auth_type = "basic"
+    else:
+        click.echo("Detected Jira Server/Data Center.")
+        api_token = click.prompt("Jira Personal Access Token (PAT)", hide_input=True)
+        email = ""
+        auth_type = "bearer"
 
     # Validate
     click.echo("Validating credentials... ", nl=False)
     try:
-        resp = requests.get(
-            f"{base_url.rstrip('/')}/rest/api/3/myself",
-            auth=HTTPBasicAuth(email, api_token),
-            timeout=10,
-        )
+        if is_cloud:
+            resp = requests.get(
+                f"{base_url}/rest/api/3/myself",
+                auth=HTTPBasicAuth(email, api_token),
+                timeout=10,
+            )
+        else:
+            resp = requests.get(
+                f"{base_url}/rest/api/2/myself",
+                headers={"Authorization": f"Bearer {api_token}"},
+                timeout=10,
+            )
         if resp.ok:
             user = resp.json()
-            click.echo(f"OK (authenticated as {user.get('displayName', email)})")
+            display = user.get("displayName", email or "user")
+            click.echo(f"OK (authenticated as {display})")
         else:
             click.echo(f"Warning: got HTTP {resp.status_code} — credentials may be invalid")
     except requests.RequestException as e:
         click.echo(f"Warning: could not validate — {e}")
 
-    return JiraConfig(base_url=base_url.rstrip("/"), email=email, api_token=api_token)
+    return JiraConfig(base_url=base_url, email=email, api_token=api_token, auth_type=auth_type)
 
 
-def _setup_confluence(jira_config: JiraConfig) -> ConfluenceConfig:
-    default_url = ""
-    default_email = ""
-    default_token = ""
+def _is_confluence_cloud(base_url: str) -> bool:
+    return ".atlassian.net" in base_url.lower()
 
-    if jira_config.base_url:
-        default_url = jira_config.base_url.rstrip("/") + "/wiki"
-        default_email = jira_config.email
-        default_token = jira_config.api_token
 
+def _setup_confluence() -> ConfluenceConfig:
     base_url = click.prompt(
-        "Confluence base URL", default=default_url or None
+        "Confluence base URL (e.g., https://confluence.company.com)"
     )
-    email = click.prompt("Confluence email", default=default_email or None)
-    api_token = click.prompt(
-        "Confluence API token (same as Jira for Atlassian Cloud)",
-        default=default_token or None,
-        hide_input=True,
-    )
+    base_url = base_url.rstrip("/")
+    is_cloud = _is_confluence_cloud(base_url)
+
+    if not is_cloud:
+        click.echo("Detected Confluence Server/Data Center.")
+        api_token = click.prompt("Confluence Personal Access Token (PAT)", hide_input=True)
+        email = ""
+        auth_type = "bearer"
+    else:
+        email = click.prompt("Confluence email")
+        api_token = click.prompt("Confluence API token", hide_input=True)
+        auth_type = "basic"
+
+    # Validate
+    click.echo("Validating credentials... ", nl=False)
+    try:
+        if is_cloud:
+            resp = requests.get(
+                f"{base_url}/rest/api/user/current",
+                auth=HTTPBasicAuth(email, api_token),
+                timeout=10,
+            )
+        else:
+            resp = requests.get(
+                f"{base_url}/rest/api/user/current",
+                headers={"Authorization": f"Bearer {api_token}"},
+                timeout=10,
+            )
+        if resp.ok:
+            user = resp.json()
+            display = user.get("displayName", email or "user")
+            click.echo(f"OK (authenticated as {display})")
+        else:
+            click.echo(f"Warning: got HTTP {resp.status_code} — credentials may be invalid")
+    except requests.RequestException as e:
+        click.echo(f"Warning: could not validate — {e}")
 
     return ConfluenceConfig(
-        base_url=base_url.rstrip("/"), email=email, api_token=api_token
+        base_url=base_url, email=email, api_token=api_token, auth_type=auth_type
     )
 
 
