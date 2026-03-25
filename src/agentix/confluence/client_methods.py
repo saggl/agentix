@@ -11,13 +11,11 @@ class ConfluenceMethods:
         page_id: str,
         body_format: str = "storage",
     ) -> Dict[str, Any]:
-        # Bearer auth requires v1 API endpoint
-        if self.auth_type == "bearer":
+        if not self._is_cloud:
             params = {"expand": "body.storage,version"}
             return self.http.get(f"{self._v1}/content/{page_id}", params=params)
-        else:
-            params = {"body-format": body_format}
-            return self.http.get(f"{self._v2}/pages/{page_id}", params=params)
+        params = {"body-format": body_format}
+        return self.http.get(f"{self._v2}/pages/{page_id}", params=params)
 
     def get_page_by_title(
         self,
@@ -50,7 +48,19 @@ class ConfluenceMethods:
         parent_id: Optional[str] = None,
         body_format: str = "storage",
     ) -> Dict[str, Any]:
-        payload: Dict[str, Any] = {
+        if not self._is_cloud:
+            # v1: space_id is actually a space key for Server/DC
+            payload: Dict[str, Any] = {
+                "type": "page",
+                "title": title,
+                "space": {"key": space_id},
+                "body": {"storage": {"value": body, "representation": body_format}},
+            }
+            if parent_id:
+                payload["ancestors"] = [{"id": parent_id}]
+            return self.http.post(f"{self._v1}/content", json=payload)
+
+        payload = {
             "spaceId": space_id,
             "title": title,
             "body": {
@@ -72,7 +82,18 @@ class ConfluenceMethods:
         body_format: str = "storage",
         version_message: Optional[str] = None,
     ) -> Dict[str, Any]:
-        payload: Dict[str, Any] = {
+        if not self._is_cloud:
+            payload: Dict[str, Any] = {
+                "type": "page",
+                "title": title,
+                "body": {"storage": {"value": body, "representation": body_format}},
+                "version": {"number": version_number},
+            }
+            if version_message:
+                payload["version"]["message"] = version_message
+            return self.http.put(f"{self._v1}/content/{page_id}", json=payload)
+
+        payload = {
             "id": page_id,
             "title": title,
             "body": {
@@ -105,7 +126,10 @@ class ConfluenceMethods:
         )
 
     def delete_page(self, page_id: str) -> None:
-        self.http.delete(f"{self._v2}/pages/{page_id}")
+        if not self._is_cloud:
+            self.http.delete(f"{self._v1}/content/{page_id}")
+        else:
+            self.http.delete(f"{self._v2}/pages/{page_id}")
 
     def move_page(
         self,
@@ -122,6 +146,18 @@ class ConfluenceMethods:
         page_id: str,
         max_results: Optional[int] = None,
     ) -> List[Dict[str, Any]]:
+        if not self._is_cloud:
+            return list(
+                self.http.paginate(
+                    f"{self._v1}/content/{page_id}/child/page",
+                    results_key="results",
+                    start_key="start",
+                    max_key="limit",
+                    total_key="size",
+                    page_size=25,
+                    max_results=max_results,
+                )
+            )
         return list(
             self.http.paginate_cursor(
                 f"{self._v2}/pages/{page_id}/children",
@@ -132,6 +168,18 @@ class ConfluenceMethods:
     # -- Comments --
 
     def get_page_comments(self, page_id: str) -> List[Dict[str, Any]]:
+        if not self._is_cloud:
+            return list(
+                self.http.paginate(
+                    f"{self._v1}/content/{page_id}/child/comment",
+                    params={"expand": "body.storage,version"},
+                    results_key="results",
+                    start_key="start",
+                    max_key="limit",
+                    total_key="size",
+                    page_size=25,
+                )
+            )
         return list(
             self.http.paginate_cursor(
                 f"{self._v2}/pages/{page_id}/footer-comments"
@@ -141,6 +189,15 @@ class ConfluenceMethods:
     def add_page_comment(
         self, page_id: str, body: str, body_format: str = "storage"
     ) -> Dict[str, Any]:
+        if not self._is_cloud:
+            return self.http.post(
+                f"{self._v1}/content",
+                json={
+                    "type": "comment",
+                    "container": {"id": page_id, "type": "page"},
+                    "body": {"storage": {"value": body, "representation": body_format}},
+                },
+            )
         return self.http.post(
             f"{self._v2}/pages/{page_id}/footer-comments",
             json={
@@ -152,11 +209,26 @@ class ConfluenceMethods:
         )
 
     def get_comment(self, comment_id: str) -> Dict[str, Any]:
+        if not self._is_cloud:
+            # v1: comments are content items
+            params = {"expand": "body.storage,version"}
+            return self.http.get(f"{self._v1}/content/{comment_id}", params=params)
         return self.http.get(f"{self._v2}/footer-comments/{comment_id}")
 
     # -- Attachments --
 
     def get_page_attachments(self, page_id: str) -> List[Dict[str, Any]]:
+        if not self._is_cloud:
+            return list(
+                self.http.paginate(
+                    f"{self._v1}/content/{page_id}/child/attachment",
+                    results_key="results",
+                    start_key="start",
+                    max_key="limit",
+                    total_key="size",
+                    page_size=25,
+                )
+            )
         return list(
             self.http.paginate_cursor(
                 f"{self._v2}/pages/{page_id}/attachments"
@@ -184,26 +256,34 @@ class ConfluenceMethods:
     # -- Spaces --
 
     def get_spaces(self, max_results: Optional[int] = None) -> List[Dict[str, Any]]:
-        # Bearer auth requires v1 API endpoint (singular "space")
-        endpoint = f"{self._v1}/space" if self.auth_type == "bearer" else f"{self._v2}/spaces"
+        if not self._is_cloud:
+            return list(
+                self.http.paginate(
+                    f"{self._v1}/space",
+                    results_key="results",
+                    start_key="start",
+                    max_key="limit",
+                    total_key="size",
+                    page_size=25,
+                    max_results=max_results,
+                )
+            )
         return list(
             self.http.paginate_cursor(
-                endpoint, max_results=max_results
+                f"{self._v2}/spaces", max_results=max_results
             )
         )
 
     def get_space(self, space_id: str) -> Dict[str, Any]:
-        # Bearer auth requires v1 API endpoint and uses space KEY
-        # v2 API uses numeric space ID
-        if self.auth_type == "bearer":
-            # v1 API: /rest/api/space/{spaceKey}
+        if not self._is_cloud:
             return self.http.get(f"{self._v1}/space/{space_id}")
-        else:
-            # v2 API: /api/v2/spaces/{spaceId}
-            return self.http.get(f"{self._v2}/spaces/{space_id}")
+        return self.http.get(f"{self._v2}/spaces/{space_id}")
 
     def get_space_by_key(self, space_key: str) -> Optional[Dict[str, Any]]:
         """Find space by its key."""
+        if not self._is_cloud:
+            # v1: just use get_space which takes space key directly
+            return self.get_space(space_key)
         params = {"keys": space_key}
         results = list(
             self.http.paginate_cursor(f"{self._v2}/spaces", params=params)

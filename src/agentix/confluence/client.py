@@ -41,7 +41,8 @@ class ConfluenceClient(ConfluenceMethods):
             error_parser=_parse_confluence_error,
         )
         self.auth_type = auth_type
-        # Bearer auth (Server/Data Center) needs v1, Basic auth (Cloud) can use v2
+        # Confluence Cloud uses v2 API, Server/DC uses v1 API
+        self._is_cloud = auth_type != "bearer"
         self._v2 = "/api/v2"
         self._v1 = "/rest/api"
 
