@@ -20,7 +20,7 @@ def test_schema_root_command(runner):
 
     data = json.loads(result.output)
     assert data["command"] == "agentix"
-    assert data["description"] == "agentix — Unified CLI for Jira, Confluence, Jenkins, and Bitbucket."
+    assert data["description"] == "agentix — Unified CLI for Jira, Confluence, Jenkins, Bitbucket, and Polarion."
     assert "arguments" in data
     assert "options" in data
     assert "subcommands" in data

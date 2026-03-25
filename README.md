@@ -1,18 +1,18 @@
 # agentix
 
-**Unified CLI for Jira, Confluence, Jenkins, and Bitbucket** — designed for both humans and AI agents.
+**Unified CLI for Jira, Confluence, Jenkins, Bitbucket, and Polarion** — designed for both humans and AI agents.
 
-agentix provides a consistent, JSON-first interface to Atlassian and Jenkins APIs, making it ideal for automation, scripting, and agentic workflows.
+agentix provides a consistent, JSON-first interface to Atlassian, Jenkins, and Polarion APIs, making it ideal for automation, scripting, and agentic workflows.
 
 ## Features
 
-- 🔄 **Unified Interface**: Single CLI for Jira, Confluence, Jenkins, and Bitbucket
+- 🔄 **Unified Interface**: Single CLI for Jira, Confluence, Jenkins, Bitbucket, and Polarion
 - 📊 **JSON-First Output**: Default JSON format for easy parsing by agents and scripts
 - 🔍 **Schema Introspection**: Machine-readable command metadata via `agentix schema`
 - 🔐 **Modern Authentication**: Bearer token and API token support
 - 📋 **Human-Friendly**: Optional table output format for terminal use
 - ⚙️ **Multi-Profile**: Manage multiple environments (dev, staging, prod)
-- 🧪 **Well-Tested**: Comprehensive test suite with 300+ tests
+- 🧪 **Well-Tested**: Comprehensive test suite with 380+ tests
 
 ## Installation
 
@@ -43,6 +43,7 @@ This will prompt you to configure:
 - **Confluence**: Base URL, email, API token (can reuse Jira credentials for Atlassian Cloud)
 - **Jenkins**: Base URL, username, API token
 - **Bitbucket**: Base URL, username, Personal Access Token (PAT)
+- **Polarion**: Base URL, username, Personal Access Token (PAT)
 
 Configuration is saved to `~/.config/agentix/config.toml`
 
@@ -53,6 +54,7 @@ agentix jira project list
 agentix confluence space list
 agentix jenkins job list
 agentix bitbucket project list
+agentix polarion project list
 ```
 
 ## Usage
@@ -200,6 +202,49 @@ agentix bitbucket build set abc123 \
   --url "https://ci.example.com/build/123"
 ```
 
+### Polarion
+
+```bash
+# List projects
+agentix polarion project list
+
+# Get project details
+agentix polarion project get MY_PROJECT
+
+# Search work items
+agentix polarion workitem search MY_PROJECT --query "type:task AND status:open"
+
+# Get work item details
+agentix polarion workitem get MY_PROJECT MP-123
+
+# Create a work item
+agentix polarion workitem create MY_PROJECT --type task --title "New task"
+
+# Update a work item
+agentix polarion workitem update MY_PROJECT MP-123 --status done
+
+# List available workflow actions
+agentix polarion workitem actions MY_PROJECT MP-123
+
+# List document spaces
+agentix polarion document spaces MY_PROJECT
+
+# List documents in a space
+agentix polarion document list MY_PROJECT _default
+
+# Search plans
+agentix polarion plan search MY_PROJECT
+
+# Search test runs
+agentix polarion testrun search MY_PROJECT
+
+# Get test run records
+agentix polarion testrun records MY_PROJECT TR-001
+
+# Health check
+agentix polarion health check
+```
+
 ### Output Formats
 
 By default, agentix outputs JSON for easy parsing:
@@ -338,8 +383,9 @@ agentix/
 │   ├── jira/            # Jira integration
 │   ├── confluence/      # Confluence integration
 │   ├── jenkins/         # Jenkins integration
-│   └── bitbucket/       # Bitbucket integration
-├── tests/               # Test suite (300+ tests)
+│   ├── bitbucket/       # Bitbucket integration
+│   └── polarion/        # Polarion integration
+├── tests/               # Test suite (380+ tests)
 ├── CLAUDE.md           # Development guidelines
 └── pyproject.toml      # Package configuration
 ```

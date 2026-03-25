@@ -11,6 +11,7 @@ from agentix.config.models import (
     ConfluenceConfig,
     JenkinsConfig,
     JiraConfig,
+    PolarionConfig,
 )
 from agentix.core.exceptions import ConfigError
 
@@ -46,6 +47,10 @@ def init(ctx):
     # Bitbucket
     if click.confirm("Configure Bitbucket?", default=False):
         profile.bitbucket = _setup_bitbucket()
+
+    # Polarion
+    if click.confirm("Configure Polarion?", default=False):
+        profile.polarion = _setup_polarion()
 
     config.default_profile = profile_name
     config.profiles[profile_name] = profile
@@ -200,6 +205,38 @@ def _setup_bitbucket() -> BitbucketConfig:
         click.echo(f"Warning: could not validate — {e}")
 
     return BitbucketConfig(base_url=base_url, api_token=api_token)
+
+
+def _setup_polarion() -> PolarionConfig:
+    base_url = click.prompt(
+        "Polarion base URL (e.g., https://polarion.company.com/polarion)"
+    )
+    base_url = base_url.rstrip("/")
+    username = click.prompt("Polarion username")
+    api_token = click.prompt("Polarion Personal Access Token (PAT)", hide_input=True)
+
+    # Validate
+    click.echo("Validating credentials... ", nl=False)
+    try:
+        from polarion.v3.client import PolarionClient
+
+        client = PolarionClient(
+            url=base_url, username=username, token=api_token, verify_ssl=False
+        )
+        result = client.healthcheck()
+        if result.get("ok"):
+            click.echo("OK")
+        else:
+            click.echo(f"Warning: health check failed — {result.get('error', 'unknown')}")
+        client.close()
+    except Exception as e:
+        click.echo(f"Warning: could not validate — {e}")
+
+    return PolarionConfig(
+        base_url=base_url,
+        username=username,
+        api_token=api_token,
+    )
 
 
 @config_group.command()
