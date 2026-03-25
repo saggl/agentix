@@ -68,11 +68,15 @@ def normalize_comment(comment: Dict[str, Any]) -> Dict[str, Any]:
         if isinstance(storage, dict):
             body_val = storage.get("value", "")
 
+    version = comment.get("version", {})
+    # v2 uses top-level createdAt, v1 uses version.when
+    created = comment.get("createdAt", "") or version.get("when", "")
+
     return {
         "id": comment.get("id", ""),
         "body": _strip_html(body_val),
-        "version": comment.get("version", {}).get("number", ""),
-        "createdAt": comment.get("createdAt", ""),
+        "version": version.get("number", ""),
+        "createdAt": created,
     }
 
 
