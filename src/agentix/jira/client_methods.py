@@ -4,6 +4,22 @@ from typing import Any, Dict, Iterator, List, Optional
 
 
 class JiraMethods:
+
+    def _text_field(self, text: str) -> Any:
+        """Format a text value for the Jira API.
+
+        API v3 (Cloud) uses Atlassian Document Format; API v2 (Server/DC) uses plain strings.
+        """
+        if getattr(self, "_is_cloud", True):
+            return {
+                "type": "doc",
+                "version": 1,
+                "content": [
+                    {"type": "paragraph", "content": [{"type": "text", "text": text}]}
+                ],
+            }
+        return text
+
     # -- Issues --
 
     def get_issue(
@@ -72,16 +88,7 @@ class JiraMethods:
             "issuetype": {"name": issue_type},
         }
         if description:
-            fields["description"] = {
-                "type": "doc",
-                "version": 1,
-                "content": [
-                    {
-                        "type": "paragraph",
-                        "content": [{"type": "text", "text": description}],
-                    }
-                ],
-            }
+            fields["description"] = self._text_field(description)
         if assignee:
             fields["assignee"] = {"accountId": assignee}
         if priority:
@@ -116,22 +123,7 @@ class JiraMethods:
         if comment:
             body["update"] = {
                 "comment": [
-                    {
-                        "add": {
-                            "body": {
-                                "type": "doc",
-                                "version": 1,
-                                "content": [
-                                    {
-                                        "type": "paragraph",
-                                        "content": [
-                                            {"type": "text", "text": comment}
-                                        ],
-                                    }
-                                ],
-                            }
-                        }
-                    }
+                    {"add": {"body": self._text_field(comment)}}
                 ]
             }
         self.http.post(f"{self._api}/issue/{issue_key}/transitions", json=body)
@@ -145,18 +137,7 @@ class JiraMethods:
     def add_comment(self, issue_key: str, body: str) -> Dict[str, Any]:
         return self.http.post(
             f"{self._api}/issue/{issue_key}/comment",
-            json={
-                "body": {
-                    "type": "doc",
-                    "version": 1,
-                    "content": [
-                        {
-                            "type": "paragraph",
-                            "content": [{"type": "text", "text": body}],
-                        }
-                    ],
-                }
-            },
+            json={"body": self._text_field(body)},
         )
 
     def get_comment(
