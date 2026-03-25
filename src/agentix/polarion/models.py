@@ -1,6 +1,6 @@
 """Response normalization for Polarion API data."""
 
-from typing import Any, Dict, List
+from typing import Any, Dict
 
 
 def normalize_workitem(wi: Dict[str, Any]) -> Dict[str, Any]:
