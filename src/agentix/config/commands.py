@@ -7,6 +7,7 @@ import requests
 from requests.auth import HTTPBasicAuth
 
 from agentix.config.models import (
+    BitbucketConfig,
     ConfluenceConfig,
     JenkinsConfig,
     JiraConfig,
@@ -41,6 +42,10 @@ def init(ctx):
     # Jenkins
     if click.confirm("Configure Jenkins?", default=False):
         profile.jenkins = _setup_jenkins()
+
+    # Bitbucket
+    if click.confirm("Configure Bitbucket?", default=False):
+        profile.bitbucket = _setup_bitbucket()
 
     config.default_profile = profile_name
     config.profiles[profile_name] = profile
@@ -169,6 +174,32 @@ def _setup_jenkins() -> JenkinsConfig:
     return JenkinsConfig(
         base_url=base_url.rstrip("/"), username=username, api_token=api_token
     )
+
+
+def _setup_bitbucket() -> BitbucketConfig:
+    base_url = click.prompt(
+        "Bitbucket base URL (e.g., https://bitbucket.company.com)"
+    )
+    base_url = base_url.rstrip("/")
+    api_token = click.prompt("Bitbucket Personal Access Token (PAT)", hide_input=True)
+
+    # Validate
+    click.echo("Validating credentials... ", nl=False)
+    try:
+        resp = requests.get(
+            f"{base_url}/rest/api/1.0/users",
+            headers={"Authorization": f"Bearer {api_token}"},
+            params={"limit": 1},
+            timeout=10,
+        )
+        if resp.ok:
+            click.echo("OK")
+        else:
+            click.echo(f"Warning: got HTTP {resp.status_code} — credentials may be invalid")
+    except requests.RequestException as e:
+        click.echo(f"Warning: could not validate — {e}")
+
+    return BitbucketConfig(base_url=base_url, api_token=api_token)
 
 
 @config_group.command()

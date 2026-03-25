@@ -4,7 +4,7 @@ from unittest.mock import patch, MagicMock
 
 import pytest
 
-from agentix.config.commands import _is_jira_cloud, _setup_jira, _setup_confluence
+from agentix.config.commands import _is_jira_cloud, _setup_jira, _setup_confluence, _setup_bitbucket
 from agentix.config.manager import ConfigManager
 from agentix.config.models import (
     AgentixConfig,
@@ -258,4 +258,51 @@ def test_setup_confluence_validation_failure(mock_click, mock_get):
     result = _setup_confluence()
 
     assert result.base_url == "https://confluence.company.com"
+    assert result.api_token == "bad-pat"
+
+
+# --- _setup_bitbucket ---
+
+
+@patch("agentix.config.commands.requests.get")
+@patch("agentix.config.commands.click")
+def test_setup_bitbucket(mock_click, mock_get):
+    """Bitbucket setup prompts for URL + PAT and validates."""
+    mock_click.prompt.side_effect = [
+        "https://bitbucket.company.com",  # base_url
+        "bb-pat-token",                    # PAT
+    ]
+    mock_resp = MagicMock()
+    mock_resp.ok = True
+    mock_get.return_value = mock_resp
+
+    result = _setup_bitbucket()
+
+    assert result.base_url == "https://bitbucket.company.com"
+    assert result.api_token == "bb-pat-token"
+    assert result.auth_type == "bearer"
+
+    # Validated with Bearer auth against REST API 1.0
+    call_url = mock_get.call_args[0][0]
+    assert "/rest/api/1.0/users" in call_url
+    call_headers = mock_get.call_args[1].get("headers", {})
+    assert call_headers.get("Authorization") == "Bearer bb-pat-token"
+
+
+@patch("agentix.config.commands.requests.get")
+@patch("agentix.config.commands.click")
+def test_setup_bitbucket_validation_failure(mock_click, mock_get):
+    """Bitbucket setup continues even when validation fails."""
+    mock_click.prompt.side_effect = [
+        "https://bitbucket.company.com",
+        "bad-pat",
+    ]
+    mock_resp = MagicMock()
+    mock_resp.ok = False
+    mock_resp.status_code = 401
+    mock_get.return_value = mock_resp
+
+    result = _setup_bitbucket()
+
+    assert result.base_url == "https://bitbucket.company.com"
     assert result.api_token == "bad-pat"
