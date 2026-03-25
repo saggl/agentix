@@ -8,7 +8,7 @@ resolution-markers = [
 
 [[package]]
 name = "agentix-cli"
-version = "0.5.0"
+version = "0.5.1"
 source = { editable = "." }
 dependencies = [
     { name = "click", version = "8.1.8", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.10'" },
@@ -46,7 +46,7 @@ requires-dist = [
     { name = "click", specifier = ">=8.0" },
     { name = "mypy", marker = "extra == 'dev'", specifier = ">=1.10" },
     { name = "packaging", specifier = ">=21.0" },
-    { name = "polarion-api", specifier = ">=3.0.3" },
+    { name = "polarion-api", specifier = ">=3.0.4" },
     { name = "pytest", marker = "extra == 'dev'", specifier = ">=7.0" },
     { name = "pytest-cov", marker = "extra == 'dev'", specifier = ">=4.0" },
     { name = "requests", specifier = ">=2.28" },
@@ -889,15 +889,15 @@ wheels = [
 
 [[package]]
 name = "polarion-api"
-version = "3.0.3"
+version = "3.0.4"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "requests" },
     { name = "zeep" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/8b/d2/8885000a3d9225bc29ae5d4b876a346c7a5653b415c9a0462aff3fe16bb4/polarion_api-3.0.3.tar.gz", hash = "sha256:3bf5a73367e427934e5d6bd373ccef071851003d34620630394b693ec5cf6e1e", size = 21492, upload-time = "2026-03-25T20:58:12.417Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/3c/f4/1d1814f93d87543b9f4cfbb45a6aec3151921c7f82e1538ac63d604a5730/polarion_api-3.0.4.tar.gz", hash = "sha256:b4a04c0832b14d867baf8e46bfdafd755b9b70b747f79d38fed7c0f0df5ef32a", size = 21518, upload-time = "2026-03-25T21:41:45.445Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/8c/a3/63813a5c45c2b756977875f32fe0df66bca934d147cc8044ae44bc84e434/polarion_api-3.0.3-py3-none-any.whl", hash = "sha256:a482da2271474c4196fd5af61059e9c8a83e905384499814f48dbc34a1c2ae66", size = 22367, upload-time = "2026-03-25T20:58:10.917Z" },
+    { url = "https://files.pythonhosted.org/packages/41/24/16025ce2a1a218c340ea4a1c5c6b3c00f7421844d802bb94c6502e033a77/polarion_api-3.0.4-py3-none-any.whl", hash = "sha256:4fe42d428c47545b2eebc2466485befe46e8e5b1bd477935eb20d93e517dd045", size = 22384, upload-time = "2026-03-25T21:41:44.357Z" },
 ]
 
 [[package]]
