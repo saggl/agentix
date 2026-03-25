@@ -5,7 +5,7 @@ from agentix.polarion.models import (
     normalize_plan,
     normalize_workitem_summary,
 )
-from ._common import _get_client, click
+from ._common import _call, _get_client, click
 
 
 @click.group("plan")
@@ -21,7 +21,7 @@ def plan_group():
 def plan_get(ctx, project_id, plan_id):
     """Get plan details."""
     client = _get_client(ctx)
-    plan = client.plans.get(project_id, plan_id)
+    plan = _call("plan get", client.plans.get, project_id, plan_id)
     ctx.obj["formatter"].output(normalize_plan(plan))
 
 
@@ -33,7 +33,7 @@ def plan_get(ctx, project_id, plan_id):
 def plan_search(ctx, project_id, query, limit):
     """Search plans."""
     client = _get_client(ctx)
-    page = client.plans.search(project_id, query=query, limit=limit)
+    page = _call("plan search", client.plans.search, project_id, query=query, limit=limit)
     ctx.obj["formatter"].output(normalize_page(page, normalize_plan))
 
 
@@ -45,5 +45,5 @@ def plan_search(ctx, project_id, query, limit):
 def plan_workitems(ctx, project_id, plan_id, limit):
     """List work items in a plan."""
     client = _get_client(ctx)
-    page = client.plans.workitems(project_id, plan_id, limit=limit)
+    page = _call("plan workitems", client.plans.workitems, project_id, plan_id, limit=limit)
     ctx.obj["formatter"].output(normalize_page(page, normalize_workitem_summary))

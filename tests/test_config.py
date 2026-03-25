@@ -4,7 +4,13 @@ from unittest.mock import patch, MagicMock
 
 import pytest
 
-from agentix.config.commands import _is_jira_cloud, _setup_jira, _setup_confluence, _setup_bitbucket
+from agentix.config.commands import (
+    _is_jira_cloud,
+    _setup_bitbucket,
+    _setup_confluence,
+    _setup_jira,
+    _setup_polarion,
+)
 from agentix.config.manager import ConfigManager
 from agentix.config.models import (
     AgentixConfig,
@@ -306,3 +312,34 @@ def test_setup_bitbucket_validation_failure(mock_click, mock_get):
 
     assert result.base_url == "https://bitbucket.company.com"
     assert result.api_token == "bad-pat"
+
+
+@patch("agentix.config.commands.click")
+@patch("polarion.v3.client.PolarionClient")
+def test_setup_polarion_verify_ssl_enabled_by_default(mock_client_cls, mock_click):
+    """Polarion setup should default to SSL verification and persist the choice."""
+    mock_click.prompt.side_effect = [
+        "https://polarion.company.com/polarion",
+        "test-user",
+        "test-token",
+    ]
+    mock_click.confirm.return_value = True
+
+    mock_client = MagicMock()
+    mock_client.healthcheck.return_value = {"ok": True}
+    mock_client_cls.return_value = mock_client
+
+    result = _setup_polarion()
+
+    assert result.verify_ssl is True
+    mock_client_cls.assert_called_once_with(
+        url="https://polarion.company.com/polarion",
+        username="test-user",
+        token="test-token",
+        verify_ssl=True,
+    )
+
+
+def test_polarion_verify_ssl_defaults_to_true_in_models():
+    cfg = AgentixConfig.from_dict({"profiles": {"p": {"polarion": {}}}})
+    assert cfg.profiles["p"].polarion.verify_ssl is True

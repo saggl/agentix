@@ -214,6 +214,7 @@ def _setup_polarion() -> PolarionConfig:
     base_url = base_url.rstrip("/")
     username = click.prompt("Polarion username")
     api_token = click.prompt("Polarion Personal Access Token (PAT)", hide_input=True)
+    verify_ssl = click.confirm("Verify SSL certificates?", default=True)
 
     # Validate
     click.echo("Validating credentials... ", nl=False)
@@ -221,7 +222,10 @@ def _setup_polarion() -> PolarionConfig:
         from polarion.v3.client import PolarionClient
 
         client = PolarionClient(
-            url=base_url, username=username, token=api_token, verify_ssl=False
+            url=base_url,
+            username=username,
+            token=api_token,
+            verify_ssl=verify_ssl,
         )
         result = client.healthcheck()
         if result.get("ok"):
@@ -236,6 +240,7 @@ def _setup_polarion() -> PolarionConfig:
         base_url=base_url,
         username=username,
         api_token=api_token,
+        verify_ssl=verify_ssl,
     )
 
 
