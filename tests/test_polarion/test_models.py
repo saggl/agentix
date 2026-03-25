@@ -150,10 +150,9 @@ def test_normalize_user():
     user = MagicMock()
     user.id = "jdoe"
     user.name = "John Doe"
-    user.email = "john@example.com"
 
     result = normalize_user(user)
-    assert result == {"id": "jdoe", "name": "John Doe", "email": "john@example.com"}
+    assert result == {"id": "jdoe", "name": "John Doe"}
 
 
 def test_normalize_page():
