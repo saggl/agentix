@@ -46,7 +46,7 @@ requires-dist = [
     { name = "click", specifier = ">=8.0" },
     { name = "mypy", marker = "extra == 'dev'", specifier = ">=1.10" },
     { name = "packaging", specifier = ">=21.0" },
-    { name = "polarion-api", specifier = ">=3.0.0" },
+    { name = "polarion-api", specifier = ">=3.0.3" },
     { name = "pytest", marker = "extra == 'dev'", specifier = ">=7.0" },
     { name = "pytest-cov", marker = "extra == 'dev'", specifier = ">=4.0" },
     { name = "requests", specifier = ">=2.28" },
@@ -889,15 +889,15 @@ wheels = [
 
 [[package]]
 name = "polarion-api"
-version = "3.0.2"
+version = "3.0.3"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "requests" },
     { name = "zeep" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/15/34/4b8da542119f387b70bc73f2c2b2d820888c9ae76845993e58e96b46f013/polarion_api-3.0.2.tar.gz", hash = "sha256:6d59d0afe63324584506db7fcbbe24c2e7d8c2890197bc447f3d1a1cef19503a", size = 20801, upload-time = "2026-03-25T14:51:39.399Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/8b/d2/8885000a3d9225bc29ae5d4b876a346c7a5653b415c9a0462aff3fe16bb4/polarion_api-3.0.3.tar.gz", hash = "sha256:3bf5a73367e427934e5d6bd373ccef071851003d34620630394b693ec5cf6e1e", size = 21492, upload-time = "2026-03-25T20:58:12.417Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/e6/fa/dc76d8a716897d6f03405955cfa29dcebab539a5416c5bba2bfc887498c2/polarion_api-3.0.2-py3-none-any.whl", hash = "sha256:13b23e9702552d8fa12760fc42b53a8fc68f8bd84402f6d5bae580d766d7061a", size = 22101, upload-time = "2026-03-25T14:51:38.357Z" },
+    { url = "https://files.pythonhosted.org/packages/8c/a3/63813a5c45c2b756977875f32fe0df66bca934d147cc8044ae44bc84e434/polarion_api-3.0.3-py3-none-any.whl", hash = "sha256:a482da2271474c4196fd5af61059e9c8a83e905384499814f48dbc34a1c2ae66", size = 22367, upload-time = "2026-03-25T20:58:10.917Z" },
 ]
 
 [[package]]
