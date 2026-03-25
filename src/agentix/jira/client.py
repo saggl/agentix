@@ -43,7 +43,7 @@ class JiraClient(JiraMethods):
             error_parser=_parse_jira_error,
         )
         # Jira Cloud uses API v3 (ADF text fields), Server/DC uses API v2 (plain text)
-        self._is_cloud = auth_type != "bearer"
+        self._is_cloud = ".atlassian.net" in base_url.lower()
         self._api = "/rest/api/3" if self._is_cloud else "/rest/api/2"
         self._agile = "/rest/agile/1.0"
 
