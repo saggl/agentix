@@ -5,7 +5,7 @@ from agentix.polarion.models import (
     normalize_test_record,
     normalize_testrun,
 )
-from ._common import _get_client, click
+from ._common import _call, _get_client, click
 
 
 @click.group("testrun")
@@ -21,7 +21,7 @@ def testrun_group():
 def testrun_get(ctx, project_id, testrun_id):
     """Get test run details."""
     client = _get_client(ctx)
-    tr = client.testruns.get(project_id, testrun_id)
+    tr = _call("testrun get", client.testruns.get, project_id, testrun_id)
     ctx.obj["formatter"].output(normalize_testrun(tr))
 
 
@@ -33,7 +33,7 @@ def testrun_get(ctx, project_id, testrun_id):
 def testrun_search(ctx, project_id, query, limit):
     """Search test runs."""
     client = _get_client(ctx)
-    page = client.testruns.search(project_id, query=query, limit=limit)
+    page = _call("testrun search", client.testruns.search, project_id, query=query, limit=limit)
     ctx.obj["formatter"].output(normalize_page(page, normalize_testrun))
 
 
@@ -45,6 +45,6 @@ def testrun_search(ctx, project_id, query, limit):
 def testrun_records(ctx, project_id, testrun_id, limit):
     """List test run records."""
     client = _get_client(ctx)
-    tr = client.testruns.get(project_id, testrun_id)
-    page = client.testruns.records(tr.uri, limit=limit)
+    tr = _call("testrun get", client.testruns.get, project_id, testrun_id)
+    page = _call("testrun records", client.testruns.records, tr.uri, limit=limit)
     ctx.obj["formatter"].output(normalize_page(page, normalize_test_record))

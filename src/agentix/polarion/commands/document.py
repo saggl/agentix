@@ -5,7 +5,7 @@ from agentix.polarion.models import (
     normalize_page,
     normalize_workitem_summary,
 )
-from ._common import _get_client, click
+from ._common import _call, _get_client, click
 
 
 @click.group("document")
@@ -25,7 +25,7 @@ def document_get(ctx, project_id, uri, location):
         raise click.UsageError("Either --uri or --location is required.")
 
     client = _get_client(ctx)
-    doc = client.documents.get(project_id, uri=uri, location=location)
+    doc = _call("document get", client.documents.get, project_id, uri=uri, location=location)
     ctx.obj["formatter"].output(normalize_document(doc))
 
 
@@ -35,7 +35,7 @@ def document_get(ctx, project_id, uri, location):
 def document_spaces(ctx, project_id):
     """List document spaces."""
     client = _get_client(ctx)
-    spaces = client.documents.list_spaces(project_id)
+    spaces = _call("document spaces", client.documents.list_spaces, project_id)
     ctx.obj["formatter"].output(spaces)
 
 
@@ -47,7 +47,7 @@ def document_spaces(ctx, project_id):
 def document_list(ctx, project_id, space, limit):
     """List documents in a space."""
     client = _get_client(ctx)
-    page = client.documents.list_in_space(project_id, space, limit=limit)
+    page = _call("document list", client.documents.list_in_space, project_id, space, limit=limit)
     ctx.obj["formatter"].output(normalize_page(page, normalize_document))
 
 
@@ -58,5 +58,5 @@ def document_list(ctx, project_id, space, limit):
 def document_workitems(ctx, project_id, uri):
     """List work items in a document."""
     client = _get_client(ctx)
-    page = client.documents.workitems(project_id, uri)
+    page = _call("document workitems", client.documents.workitems, project_id, uri)
     ctx.obj["formatter"].output(normalize_page(page, normalize_workitem_summary))

@@ -1,6 +1,6 @@
 """Health check commands for Polarion."""
 
-from ._common import _get_client, click
+from ._common import _call, _get_client, click
 
 
 @click.group("health")
@@ -14,7 +14,7 @@ def health_group():
 def health_check(ctx):
     """Run a health check against the Polarion server."""
     client = _get_client(ctx)
-    result = client.healthcheck()
+    result = _call("health check", client.healthcheck)
     ctx.obj["formatter"].output(result)
 
 
@@ -23,5 +23,5 @@ def health_check(ctx):
 def health_capabilities(ctx):
     """Show Polarion server capabilities."""
     client = _get_client(ctx)
-    result = client.capabilities()
+    result = _call("health capabilities", client.capabilities)
     ctx.obj["formatter"].output(result)

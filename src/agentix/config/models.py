@@ -44,7 +44,7 @@ class PolarionConfig:
     base_url: str = ""
     username: str = ""
     api_token: str = ""
-    verify_ssl: bool = False
+    verify_ssl: bool = True
 
 
 @dataclass

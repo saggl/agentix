@@ -1,7 +1,7 @@
 """Project commands for Polarion."""
 
 from agentix.polarion.models import normalize_page, normalize_project, normalize_user
-from ._common import _get_client, click
+from ._common import _call, _get_client, click
 
 
 @click.group("project")
@@ -16,7 +16,7 @@ def project_group():
 def project_list(ctx, query):
     """List all projects."""
     client = _get_client(ctx)
-    page = client.projects.list(query=query)
+    page = _call("project list", client.projects.list, query=query)
     ctx.obj["formatter"].output(normalize_page(page, normalize_project))
 
 
@@ -26,7 +26,7 @@ def project_list(ctx, query):
 def project_get(ctx, project_id):
     """Get project details."""
     client = _get_client(ctx)
-    project = client.projects.get(project_id)
+    project = _call("project get", client.projects.get, project_id)
     ctx.obj["formatter"].output(normalize_project(project))
 
 
@@ -37,5 +37,5 @@ def project_get(ctx, project_id):
 def project_users(ctx, project_id, limit):
     """List project users."""
     client = _get_client(ctx)
-    page = client.projects.users(project_id, limit=limit)
+    page = _call("project users", client.projects.users, project_id, limit=limit)
     ctx.obj["formatter"].output(normalize_page(page, normalize_user))

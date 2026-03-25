@@ -6,7 +6,7 @@ from agentix.polarion.models import (
     normalize_workitem_detail,
     normalize_workitem_summary,
 )
-from ._common import _get_client, click
+from ._common import _call, _get_client, click
 
 
 @click.group("workitem")
@@ -22,7 +22,7 @@ def workitem_group():
 def workitem_get(ctx, project_id, workitem_id):
     """Get work item details."""
     client = _get_client(ctx)
-    wi = client.workitems.get(project_id, workitem_id)
+    wi = _call("workitem get", client.workitems.get, project_id, workitem_id)
     ctx.obj["formatter"].output(normalize_workitem_detail(wi))
 
 
@@ -35,7 +35,14 @@ def workitem_get(ctx, project_id, workitem_id):
 def workitem_search(ctx, project_id, query, sort, limit):
     """Search work items."""
     client = _get_client(ctx)
-    page = client.workitems.search(project_id, query=query, sort=sort, limit=limit)
+    page = _call(
+        "workitem search",
+        client.workitems.search,
+        project_id,
+        query=query,
+        sort=sort,
+        limit=limit,
+    )
     ctx.obj["formatter"].output(normalize_page(page, normalize_workitem_summary))
 
 
@@ -51,7 +58,7 @@ def workitem_create(ctx, project_id, type_id, title, description):
 
     payload = WorkitemCreate(type_id=type_id, title=title, description_html=description)
     client = _get_client(ctx)
-    wi = client.workitems.create(project_id, payload)
+    wi = _call("workitem create", client.workitems.create, project_id, payload)
     ctx.obj["formatter"].success(
         f"Created work item {wi.id}",
         data=normalize_workitem_detail(wi),
@@ -77,7 +84,7 @@ def workitem_update(ctx, project_id, workitem_id, title, status_id, priority_id,
         description_html=description,
     )
     client = _get_client(ctx)
-    wi = client.workitems.update(project_id, workitem_id, payload)
+    wi = _call("workitem update", client.workitems.update, project_id, workitem_id, payload)
     ctx.obj["formatter"].success(
         f"Updated work item {wi.id}",
         data=normalize_workitem_detail(wi),
@@ -95,7 +102,7 @@ def workitem_delete(ctx, project_id, workitem_id, yes):
         click.confirm(f"Delete work item {workitem_id}?", abort=True)
 
     client = _get_client(ctx)
-    client.workitems.delete(project_id, workitem_id)
+    _call("workitem delete", client.workitems.delete, project_id, workitem_id)
     ctx.obj["formatter"].success(f"Deleted work item {workitem_id}")
 
 
@@ -106,7 +113,7 @@ def workitem_delete(ctx, project_id, workitem_id, yes):
 def workitem_actions(ctx, project_id, workitem_id):
     """List available workflow actions."""
     client = _get_client(ctx)
-    actions = client.workitems.available_actions(project_id, workitem_id)
+    actions = _call("workitem actions", client.workitems.available_actions, project_id, workitem_id)
     ctx.obj["formatter"].output(actions)
 
 
@@ -117,5 +124,5 @@ def workitem_actions(ctx, project_id, workitem_id):
 def workitem_links(ctx, project_id, workitem_id):
     """List work item links."""
     client = _get_client(ctx)
-    links = client.workitems.links(project_id, workitem_id)
+    links = _call("workitem links", client.workitems.links, project_id, workitem_id)
     ctx.obj["formatter"].output([_link(lnk) for lnk in links])
