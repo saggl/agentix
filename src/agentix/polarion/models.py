@@ -1,6 +1,6 @@
 """Response normalization for Polarion API data."""
 
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, Optional
 
 
 def _enum_ref(ref: Any) -> Optional[Dict[str, str]]:
@@ -70,7 +70,7 @@ def normalize_workitem_detail(wi: Any) -> Dict[str, Any]:
         "author": _user_ref(wi.author),
         "assignees": [_user_ref(a) for a in wi.assignees],
         "approvers": [_user_ref(a) for a in wi.approvers],
-        "links": [_link(l) for l in wi.links],
+        "links": [_link(lnk) for lnk in wi.links],
         "attachments": [_attachment(a) for a in wi.attachments],
         "custom_fields": wi.custom_fields,
         "created_at": str(wi.created_at) if wi.created_at else None,

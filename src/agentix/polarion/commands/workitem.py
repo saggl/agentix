@@ -118,4 +118,4 @@ def workitem_links(ctx, project_id, workitem_id):
     """List work item links."""
     client = _get_client(ctx)
     links = client.workitems.links(project_id, workitem_id)
-    ctx.obj["formatter"].output([_link(l) for l in links])
+    ctx.obj["formatter"].output([_link(lnk) for lnk in links])
