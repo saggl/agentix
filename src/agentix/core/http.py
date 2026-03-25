@@ -253,9 +253,11 @@ class BaseHTTPClient:
         data: Any = None,
         files: Any = None,
         headers: Optional[Dict[str, str]] = None,
+        params: Optional[Dict[str, Any]] = None,
     ) -> Any:
         return self._request(
-            "POST", path, json=json, data=data, files=files, headers=headers
+            "POST", path, json=json, data=data, files=files, headers=headers,
+            params=params,
         )
 
     def put(
@@ -265,8 +267,13 @@ class BaseHTTPClient:
     ) -> Any:
         return self._request("PUT", path, json=json)
 
-    def delete(self, path: str) -> Any:
-        return self._request("DELETE", path)
+    def delete(
+        self,
+        path: str,
+        json: Optional[Union[Dict, list]] = None,
+        params: Optional[Dict[str, Any]] = None,
+    ) -> Any:
+        return self._request("DELETE", path, json=json, params=params)
 
     def get_raw(self, path: str, **kwargs: Any) -> requests.Response:
         """Get raw response without JSON parsing."""

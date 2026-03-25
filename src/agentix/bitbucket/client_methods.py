@@ -156,7 +156,7 @@ class BitbucketMethods:
         name: str,
     ) -> None:
         """Delete a branch."""
-        # Need to get the branch details first to get the commit ID for deletion
+        # Need to get the branch details first to get the end point commit
         branches = self.http.get(
             f"{self._api}/projects/{project_key}/repos/{repo_slug}/branches",
             params={"filterText": name, "limit": 1},
@@ -165,10 +165,11 @@ class BitbucketMethods:
         if not branches:
             raise ValueError(f"Branch '{name}' not found")
 
-        branch_id = branches[0].get("id")
+        end_point = branches[0].get("latestCommit", "")
+        # Bitbucket Server/DC uses the branch-utils REST API for deletion
         self.http.delete(
-            f"{self._api}/projects/{project_key}/repos/{repo_slug}/branches",
-            json={"name": branch_id},
+            f"/rest/branch-utils/1.0/projects/{project_key}/repos/{repo_slug}/branches",
+            json={"name": f"refs/heads/{name}", "endPoint": end_point},
         )
 
     # -- Tags --

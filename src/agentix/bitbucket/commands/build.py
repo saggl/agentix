@@ -39,7 +39,10 @@ def build_set(ctx, commit_id, state, key, name, url, description):
         url=url,
         description=description,
     )
-    ctx.obj["formatter"].success(
-        f"Set build status for commit {commit_id}",
-        data=normalize_build_status(status),
-    )
+    if status:
+        ctx.obj["formatter"].success(
+            f"Set build status for commit {commit_id}",
+            data=normalize_build_status(status),
+        )
+    else:
+        ctx.obj["formatter"].success(f"Set build status for commit {commit_id}")
