@@ -23,8 +23,9 @@ def config_group():
 
 
 @config_group.command()
+@click.option("--strict/--no-strict", default=False, help="Fail if credential validation fails.")
 @click.pass_context
-def init(ctx):
+def init(ctx, strict):
     """Interactive setup wizard."""
     cm = ctx.obj["config_manager"]
     config = cm.config
@@ -34,23 +35,23 @@ def init(ctx):
 
     # Jira
     if click.confirm("Configure Jira?", default=True):
-        profile.jira = _setup_jira()
+        profile.jira = _setup_jira(strict=strict)
 
     # Confluence
     if click.confirm("Configure Confluence?", default=True):
-        profile.confluence = _setup_confluence()
+        profile.confluence = _setup_confluence(strict=strict)
 
     # Jenkins
     if click.confirm("Configure Jenkins?", default=False):
-        profile.jenkins = _setup_jenkins()
+        profile.jenkins = _setup_jenkins(strict=strict)
 
     # Bitbucket
     if click.confirm("Configure Bitbucket?", default=False):
-        profile.bitbucket = _setup_bitbucket()
+        profile.bitbucket = _setup_bitbucket(strict=strict)
 
     # Polarion
     if click.confirm("Configure Polarion?", default=False):
-        profile.polarion = _setup_polarion()
+        profile.polarion = _setup_polarion(strict=strict)
 
     config.default_profile = profile_name
     config.profiles[profile_name] = profile
@@ -64,7 +65,7 @@ def _is_jira_cloud(base_url: str) -> bool:
     return ".atlassian.net" in base_url.lower()
 
 
-def _setup_jira() -> JiraConfig:
+def _setup_jira(strict: bool = False) -> JiraConfig:
     base_url = click.prompt("Jira base URL (e.g., https://company.atlassian.net)")
     base_url = base_url.rstrip("/")
     is_cloud = _is_jira_cloud(base_url)
@@ -99,8 +100,12 @@ def _setup_jira() -> JiraConfig:
             display = user.get("displayName", email or "user")
             click.echo(f"OK (authenticated as {display})")
         else:
+            if strict:
+                raise ConfigError(f"Validation failed with HTTP {resp.status_code}")
             click.echo(f"Warning: got HTTP {resp.status_code} — credentials may be invalid")
     except requests.RequestException as e:
+        if strict:
+            raise ConfigError(f"Could not validate credentials: {e}") from e
         click.echo(f"Warning: could not validate — {e}")
 
     return JiraConfig(base_url=base_url, email=email, api_token=api_token, auth_type=auth_type)
@@ -110,7 +115,7 @@ def _is_confluence_cloud(base_url: str) -> bool:
     return ".atlassian.net" in base_url.lower()
 
 
-def _setup_confluence() -> ConfluenceConfig:
+def _setup_confluence(strict: bool = False) -> ConfluenceConfig:
     base_url = click.prompt(
         "Confluence base URL (e.g., https://confluence.company.com)"
     )
@@ -147,8 +152,12 @@ def _setup_confluence() -> ConfluenceConfig:
             display = user.get("displayName", email or "user")
             click.echo(f"OK (authenticated as {display})")
         else:
+            if strict:
+                raise ConfigError(f"Validation failed with HTTP {resp.status_code}")
             click.echo(f"Warning: got HTTP {resp.status_code} — credentials may be invalid")
     except requests.RequestException as e:
+        if strict:
+            raise ConfigError(f"Could not validate credentials: {e}") from e
         click.echo(f"Warning: could not validate — {e}")
 
     return ConfluenceConfig(
@@ -156,7 +165,7 @@ def _setup_confluence() -> ConfluenceConfig:
     )
 
 
-def _setup_jenkins() -> JenkinsConfig:
+def _setup_jenkins(strict: bool = False) -> JenkinsConfig:
     base_url = click.prompt("Jenkins base URL (e.g., https://jenkins.company.com)")
     username = click.prompt("Jenkins username")
     api_token = click.prompt("Jenkins API token", hide_input=True)
@@ -172,8 +181,12 @@ def _setup_jenkins() -> JenkinsConfig:
         if resp.ok:
             click.echo("OK")
         else:
+            if strict:
+                raise ConfigError(f"Validation failed with HTTP {resp.status_code}")
             click.echo(f"Warning: got HTTP {resp.status_code}")
     except requests.RequestException as e:
+        if strict:
+            raise ConfigError(f"Could not validate credentials: {e}") from e
         click.echo(f"Warning: could not validate — {e}")
 
     return JenkinsConfig(
@@ -181,7 +194,7 @@ def _setup_jenkins() -> JenkinsConfig:
     )
 
 
-def _setup_bitbucket() -> BitbucketConfig:
+def _setup_bitbucket(strict: bool = False) -> BitbucketConfig:
     base_url = click.prompt(
         "Bitbucket base URL (e.g., https://bitbucket.company.com)"
     )
@@ -200,14 +213,18 @@ def _setup_bitbucket() -> BitbucketConfig:
         if resp.ok:
             click.echo("OK")
         else:
+            if strict:
+                raise ConfigError(f"Validation failed with HTTP {resp.status_code}")
             click.echo(f"Warning: got HTTP {resp.status_code} — credentials may be invalid")
     except requests.RequestException as e:
+        if strict:
+            raise ConfigError(f"Could not validate credentials: {e}") from e
         click.echo(f"Warning: could not validate — {e}")
 
     return BitbucketConfig(base_url=base_url, api_token=api_token)
 
 
-def _setup_polarion() -> PolarionConfig:
+def _setup_polarion(strict: bool = False) -> PolarionConfig:
     base_url = click.prompt(
         "Polarion base URL (e.g., https://polarion.company.com/polarion)"
     )
@@ -231,9 +248,14 @@ def _setup_polarion() -> PolarionConfig:
         if result.get("ok"):
             click.echo("OK")
         else:
-            click.echo(f"Warning: health check failed — {result.get('error', 'unknown')}")
+            error = result.get("error", "unknown")
+            if strict:
+                raise ConfigError(f"Health check failed: {error}")
+            click.echo(f"Warning: health check failed — {error}")
         client.close()
     except Exception as e:
+        if strict:
+            raise ConfigError(f"Could not validate credentials: {e}") from e
         click.echo(f"Warning: could not validate — {e}")
 
     return PolarionConfig(

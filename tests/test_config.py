@@ -343,3 +343,38 @@ def test_setup_polarion_verify_ssl_enabled_by_default(mock_client_cls, mock_clic
 def test_polarion_verify_ssl_defaults_to_true_in_models():
     cfg = AgentixConfig.from_dict({"profiles": {"p": {"polarion": {}}}})
     assert cfg.profiles["p"].polarion.verify_ssl is True
+
+
+@patch("agentix.config.commands.requests.get")
+@patch("agentix.config.commands.click")
+def test_setup_jira_strict_validation_raises_on_http_error(mock_click, mock_get):
+    mock_click.prompt.side_effect = [
+        "https://company.atlassian.net",
+        "user@company.com",
+        "bad-token",
+    ]
+    mock_resp = MagicMock()
+    mock_resp.ok = False
+    mock_resp.status_code = 401
+    mock_get.return_value = mock_resp
+
+    with pytest.raises(ConfigError):
+        _setup_jira(strict=True)
+
+
+@patch("agentix.config.commands.click")
+@patch("polarion.v3.client.PolarionClient")
+def test_setup_polarion_strict_validation_raises_on_failed_health(mock_client_cls, mock_click):
+    mock_click.prompt.side_effect = [
+        "https://polarion.company.com/polarion",
+        "test-user",
+        "test-token",
+    ]
+    mock_click.confirm.return_value = True
+
+    mock_client = MagicMock()
+    mock_client.healthcheck.return_value = {"ok": False, "error": "unauthorized"}
+    mock_client_cls.return_value = mock_client
+
+    with pytest.raises(ConfigError):
+        _setup_polarion(strict=True)
