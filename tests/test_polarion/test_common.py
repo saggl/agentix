@@ -6,6 +6,8 @@ from agentix.core.exceptions import (
     AuthenticationError,
     NetworkError,
     NotFoundError,
+    RateLimitError,
+    ServerError,
     ValidationError,
 )
 from agentix.polarion.commands._common import _call
@@ -52,4 +54,26 @@ def test_call_maps_validation_messages():
         _call("workitem search", _boom)
         assert False, "expected ValidationError"
     except ValidationError:
+        pass
+
+
+def test_call_maps_rate_limit_messages():
+    def _boom():
+        raise RuntimeError("429 too many requests")
+
+    try:
+        _call("workitem search", _boom)
+        assert False, "expected RateLimitError"
+    except RateLimitError:
+        pass
+
+
+def test_call_maps_server_error_messages():
+    def _boom():
+        raise RuntimeError("503 service unavailable")
+
+    try:
+        _call("health check", _boom)
+        assert False, "expected ServerError"
+    except ServerError:
         pass
