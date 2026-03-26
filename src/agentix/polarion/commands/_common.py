@@ -11,6 +11,8 @@ from agentix.core.exceptions import (
     AuthenticationError,
     NetworkError,
     NotFoundError,
+    RateLimitError,
+    ServerError,
     ValidationError,
 )
 
@@ -53,6 +55,12 @@ def _map_polarion_error(error: Exception, operation: str) -> AgentixError:
 
     if "404" in lower or "not found" in lower:
         return NotFoundError(f"Polarion resource not found during {operation}: {message}")
+
+    if "429" in lower or "rate limit" in lower or "too many requests" in lower:
+        return RateLimitError(f"Polarion rate limit exceeded during {operation}: {message}")
+
+    if "500" in lower or "502" in lower or "503" in lower or "504" in lower:
+        return ServerError(f"Polarion server error during {operation}: {message}")
 
     if "400" in lower or "invalid" in lower or "validation" in lower:
         return ValidationError(f"Polarion rejected request during {operation}: {message}")
